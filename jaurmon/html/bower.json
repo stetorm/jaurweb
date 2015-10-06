@@ -1,0 +1,20 @@
+{
+  "name": "auweb",
+  "version": "0.0.1",
+  "authors": [
+    "Stefano Brega <stefano.brega@me.com>"
+  ],
+  "main": "index.html",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap-dialog": "~1.34.5",
+    "jquery": "~2.1.4"
+  }
+}

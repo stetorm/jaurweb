@@ -1,0 +1,6 @@
+.iml
+.class
+*.log*
+.idea
+/target
+*packages*

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/bower_components/bootstrap-dialog/dist/css/bootstrap-dialog.min.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/bower_components/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../css/base.css">
+
+
+    <title>Aurora Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .btn-default,
+        .btn-default:focus,
+        .btn-default:active {
+            outline: 0;
+        }
+
+        textarea,
+        textarea:focus,
+        textarea:active {
+            resize: none;
+            outline: none;
+        }
+    </style>
+
+
+</head>
+
+<body>
+<div class="container">
+
+    <!-- Portfolio Item Heading -->
+    <div class="row">
+        <div class="col-lg-12">
+            <h1 class="page-header">
+                <span id="lblInverterStatus" class="label label-danger">Aurora Monitor</span>
+                <small>Alpha Version</small>
+            </h1>
+        </div>
+    </div>
+    <!-- /.row -->
+    <!-- Portfolio Item Row -->
+    <ul id="tabs" class="nav nav-tabs">
+        <li class="active"><a href="#home" data-toggle="tab">Home</a>
+        </li>
+        <li><a href="#pvoutput" data-toggle="tab">PVOutput</a></li>
+        <li><a href="#settings" data-toggle="tab">Settings</a></li>
+    </ul>
+    <div class="tab-content">
+        <!-- TAB HOME -->
+        <div style="margin-bottom:40px"></div>
+        <div class="tab-pane active" id="home">
+            <div class="row">
+                <div class="col-md-8" id="cmdOutput">
+                    <form role="form">
+                        <textarea id="areaResult" rows='18' class="form-control"></textarea>
+                    </form>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <div class="btn-group-vertical" role="group" aria-label="...">
+                            <div class="input-group">
+                                <input type="text" id="invaddress" value="2" class="form-control">
+                                <span class="input-group-addon">Address (1-255)</span>
+                            </div>
+                            <button type="button" class="btn btn-default" data-opcode='productNumber'>Product Number
+                            </button>
+                            <button type="button" class="btn btn-default" data-opcode='serialNumber'>Serial Number
+                            </button>
+                            <button type="button" class="btn btn-default" data-opcode='versionNumber'>Version</button>
+                            <button type="button" class="btn btn-default" data-opcode='firmwareNumber'>Firmware Version
+                            </button>
+                            <button type="button" class="btn btn-default" data-opcode='manufacturingDate'>Manufacturing
+                                Date
+                            </button>
+                            <button type="button" class="btn btn-default" data-opcode='sysConfig'>System Configuration
+                            </button>
+                            <button type="button" class="btn btn-default" data-opcode='timeCounter'>Time Counter
+                            </button>
+                            <button type="button" class="btn btn-default" data-opcode='actualTime'>Actual Time</button>
+                            <div class="btn-group">
+                                <button type="button" class="btn  dropdown-toggle btn-default" data-toggle="dropdown">
+                                    DSP Data <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu" role="menu">
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='freqAll'
+                                                class="btn btn-default btn-block">FREQUENCY (ALL)
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='gridVoltageAll'
+                                                class="btn btn-default btn-block">GRID VOLTAGE (ALL)
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='gridCurrentAll'
+                                                class="btn btn-default btn-block">GRID CURRENT (ALL)
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='gridPowerAll'
+                                                class="btn btn-default btn-block">GRID POWER (ALL)
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='input1Voltage'
+                                                class="btn btn-default btn-block">INPUT1 VOLTAGE
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='input1Current'
+                                                class="btn btn-default btn-block">INPUT1 CURRENT
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='input2Voltage'
+                                                class="btn btn-default btn-block">INPUT2 VOLTAGE
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='input2Current'
+                                                class="btn btn-default btn-block">INPUT2 CURRENT
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='inverterTemp'
+                                                class="btn btn-default btn-block">INVERTER TEMPERATURE GRID TIED
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='dspData' data-subcode='boosterTemp'
+                                                class="btn btn-default btn-block">BOOSTER TEMPERATURE GRID TIED
+                                        </button>
+                                    </li>
+
+                                </ul>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn  dropdown-toggle btn-default" data-toggle="dropdown">
+                                    Energy Prod.<span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu" role="menu">
+                                    <li>
+                                        <button type="button" data-opcode='cumEnergy' data-subcode='daily'
+                                                class="btn btn-default btn-block">DAILY
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='cumEnergy' data-subcode='weekly'
+                                                class="btn btn-default btn-block">WEEKLY
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='cumEnergy' data-subcode='monthly'
+                                                class="btn btn-default btn-block">MONTHLY
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='cumEnergy' data-subcode='yearly'
+                                                class="btn btn-default btn-block">YEARLY
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='cumEnergy' data-subcode='last7days'
+                                                class="btn btn-default btn-block">LAST7DAYS
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='cumEnergy' data-subcode='total'
+                                                class="btn btn-default btn-block">TOTAL
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" data-opcode='cumEnergy' data-subcode='partial'
+                                                class="btn btn-default btn-block">PARTIAL
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- FINE TAB HOME -->
+        <div class="tab-pane" id="pvoutput">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="input-group">
+                            <span class="input-group-addon">URL</span>
+                            <input type="text" id="txtPVoutUrl" class="form-control" placeholder="http://">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">API Key</span>
+                            <input type="text" id="txtAPIkey" class="form-control">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">System Id</span>
+                            <input type="text" id="txtSystemId" class="form-control" placeholder="es. 12345">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">Live Update (min.)</span>
+
+                            <div class="btn-group" data-toggle="buttons-radio" aria-label="...">
+                                <button id="btnPeriod1" type="radio" class="btn btn-default active">5</button>
+                                <button id="btnPeriod2" type="radio" class="btn btn-default">10</button>
+                                <button id="btnPeriod3" type="radio" class="btn btn-default">15</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" id="btnPVoutSave" class="btn btn-default btn-lg small">Save</button>
+                        <button type="button" id="btnPVoutTest" class="btn btn-default btn-lg small">Test</button>
+                        <div class="btn-group btn-group-lg" data-toggle="buttons-radio">
+                            <button id="btnPVoutStop" class="btn btn-default active"><i
+                                    class="glyphicon glyphicon-stop"></i>
+                            </button>
+                            <button id="btnPVoutStart" class="btn btn-default"><i class="glyphicon glyphicon-play"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane" id="settings">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="input-group">
+                            <span class="input-group-addon">Serial Port</span>
+                            <input type="text" id="txtSerialPort" class="form-control"
+                                   placeholder="select serial port path, es: /dev/ttyUSB0">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">Baud Rate</span>
+                            <input type="text" id="txtBaudRate" class="form-control"
+                                   placeholder="Select Baud Rate, es:19200">
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-addon">Inverter Address</span>
+                            <input type="text" id="txtInvAddress" class="form-control"
+                                   placeholder="Select Inverter Address, es:2">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" id="btnSaveSettings" class="btn btn-default btn-lg small">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr>
+
+        <!-- Footer -->
+        <!--
+            <footer>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <p>Copyright © Your Website 2014</p>
+                    </div>
+                </div>
+                 /.row
+            </footer>
+        -->
+        <script>
+
+
+        </script>
+    </div>
+</div>
+
+
+<!-- jQuery -->
+<script src="/bower_components/jquery/dist/jquery.min.js"></script>
+<!-- Boostrap -->
+<script src="/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+<script type="text/javascript">
+    jQuery(document).ready(function () {
+        console.log("partito");
+        $("#tabs").tab();
+        $("#tabs a").click(function (e) {
+            e.preventDefault();
+            console.log("premuto " + this);
+            $(this).tab('show');
+        });
+
+
+        // inizializzaizione bottoni
+        $('button[data-opcode]').each(function() {
+            $(this).click( function() {
+                // When the button is clicked, it runs this code.
+
+                el = $(this);
+
+                var cmd = {};
+                var opcode = $(this).attr('data-opcode');
+                var subcode =  $(this).attr('data-subcode');
+                cmd['opcode'] = opcode;
+                if (subcode != null) {
+                    cmd['subcode'] = subcode;
+                }
+                var address = $("#invaddress").val();
+                cmd['address'] = address;
+
+                sendInvCommand(cmd);
+                console.log("Listener fired on button "+$(this).attr('data-opcode'));
+            });
+        });
+
+        // bottone PVOutput stop
+        $("#btnPVoutStop").click(function() {
+            console.log("Stop button pressed");
+
+
+            if ($(this).attr("class").indexOf("active")>-1) {
+                console.log("Button already pressed nothing to do");
+            } else {
+                sendPvOutputStopCommand();
+
+            }
+
+        });
+
+        // botton PVOutput save
+        $("#btnPVoutSave").click(function(){
+            console.log("Save button pressed");
+            sendSaveCfgCommand();
+        });
+
+
+        // botton PVOutput start
+        $("#btnPVoutStart").click(function() {
+            console.log("Play button pressed");
+            var thisButton = $(this);
+
+            if ($(this).attr("class").indexOf("active")>-1) {
+                console.log("Button already pressed nothing to do");
+            } else {
+                sendPvOutputStartCommand() ;
+            }
+
+        });
+
+
+        // botton PVOutput Test
+        $("#btnPVoutTest").click( function() {
+            console.log("Test button pressed");
+            var thisButton = $(this);
+
+            sendPvOutputTestCommand().done(function(result) {
+                console.log("responseString :"+result);
+                var cl = thisButton.attr("class");
+                if (result['result'] == 'OK') {
+                    thisButton.attr("class", cl+" btn-success");
+                } else {
+                    thisButton.attr("class", cl+" btn-danger");
+                }
+                setTimeout(function(){
+                    thisButton.attr("class", cl)
+                },1000);
+
+            });
+
+        });
+
+        $("#btnSaveSettings").click(function(){
+            console.log("Button btnSaveSettings pressed");
+            sendSaveSettings();
+
+        });
+
+
+        window.setTimeout(sendLoadStatusCommand, 30000);
+        sendLoadStatusCommand();
+        sendLoadCfgCommand();
+
+    });
+</script>
+
+<script>
+
+
+
+    function setInverterOnline() {
+
+        $("#lblInverterStatus").attr("class", "label label-success");
+
+    }
+
+    function setInverterOffline() {
+        $("#lblInverterStatus").attr("class", "label label-danger");
+
+    }
+
+    function setPvOutputRunning(isRunning) {
+
+        var btnStart = $("#btnPVoutStart");
+        var btnStop = $("#btnPVoutStop");
+
+        if (isRunning) {
+            btnStart.addClass("active");
+            btnStop.addClass("active");
+
+        }
+        else {
+            btnStop.addClass("active");
+            btnStart.addClass("active");
+
+        }
+
+    }
+
+    function createPVoutParamsQueryString() {
+
+
+        var periodBtnActive = $('[id^="btnPeriod"] [active]').first();
+
+        var data = {
+            pvOutputApiKey:$("#txtAPIkey").val(),
+            pvOutputSystemId:$("#txtSystemId").val() ,
+            pvOutputUrl:$("#txtPVoutUrl").val()
+//            pvOutputPeriod:periodBtnActive.text()
+        };
+
+
+        var encodedData = $.param(data);
+
+        return encodedData;
+
+    }
+
+    function sendInvCommand(cmd) {
+        var dataUrl = '/cmd/inv?';
+
+        var urlString = dataUrl+$.param(cmd);
+        console.log('urlString '+urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            console.log("Executed command: "+urlString +" with response: "+status);
+            textOutput =  $("#areaResult").text();
+            if (textOutput != null) {
+                $("#areaResult").text(msg+textOutput);
+
+            }
+
+
+        });
+
+
+    }
+
+    function sendPvOutputTestCommand() {
+        var urlString = '/cmd/pvOutputTest';
+
+        var encodedData = createPVoutParamsQueryString();
+
+        urlString = urlString+"?"+encodedData;
+        console.log('urlString '+urlString);
+        console.log("PVoutput text executed");
+
+        return $.get(urlString);
+
+    }
+
+    function sendSaveCfgCommand() {
+        var urlString = '/cmd/saveCfg?';
+
+        var cmdMap = {};
+        cmdMap["pvOutputApiKey"] = $("#txtAPIkey").val();
+        cmdMap["pvOutputSystemId"] = $("#txtSystemId").val();
+        cmdMap["pvOutputUrl"] = $("#txtPVoutUrl").val();
+
+        urlString = urlString+ $.param(cmdMap);
+        console.log('urlString '+urlString);
+        console.log("PVoutput settings saved");
+
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            console.log("Executed command: "+urlString +" with response: "+status);
+
+        });
+
+    }
+
+    function sendSaveSettings(){
+
+        var urlString = '/cmd/saveSettings?';
+
+        var cmdMap = {};
+
+        cmdMap["serialPort"] = $("#txtSerialPort").val();
+        cmdMap["baudRate"] = $("#txtBaudRate").val();
+        cmdMap["inverterAddress"] = $("#txtInvAddress").val();
+
+        urlString = urlString+ $.param(cmdMap);
+        console.log('urlString '+urlString);
+        console.log("PVoutput settings saved");
+
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            console.log("Executed command: "+urlString +" with response: "+status);
+
+        });
+
+    }
+
+    function sendPvOutputStopCommand() {
+        var urlString = '/cmd/pvOutputStop';
+
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            console.log("Executed command: "+urlString +" with response: "+status);
+
+        });
+
+    }
+
+    function sendPvOutputStartCommand() {
+        var urlString = '/cmd/pvOutputStart';
+
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            console.log("Executed command: "+urlString +" with response: "+status);
+
+        });
+
+    }
+
+    function sendLoadStatusCommand() {
+        var urlString = '/cmd/status';
+
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var params = JSON.parse(msg);
+
+            var invStatus = params["inverterStatus"];
+            var pvOutputStatus = params["pvOutputStatus"];
+
+            setPvOutputRunning(pvOutputStatus == "on");
+
+            if (invStatus == "online") {
+
+                setInverterOnline();
+            } else {
+                setInverterOffline();
+            }
+        });
+
+    }
+
+    function sendLoadCfgCommand() {
+        var urlString = '/cmd/loadCfg';
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var params = JSON.parse(msg);
+            $("#txtPVoutUrl").val(params["pvOutputUrl"]);
+            $("#txtAPIkey").val(params["pvOutputApiKey"]);
+            $("#txtSystemId").val(params["pvOutputSystemId"]);
+            $("#txtSerialPort").val(params["serialPort"]);
+            $("#txtBaudRate").val(params["baudRate"]);
+            $("#txtInvAddress").val(params["inverterAddress"]);
+        });
+
+    }
+</script>
+</body>
+
+</html>
