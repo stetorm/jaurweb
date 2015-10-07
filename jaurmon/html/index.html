@@ -367,9 +367,9 @@
                 console.log("responseString :"+result);
                 var cl = thisButton.attr("class");
                 if (result['result'] == 'OK') {
-                    thisButton.attr("class", cl+" btn-success");
-                } else {
                     thisButton.attr("class", cl+" btn-danger");
+                } else {
+                    thisButton.attr("class", cl+" btn-success");
                 }
                 setTimeout(function(){
                     thisButton.attr("class", cl)
@@ -415,12 +415,12 @@
 
         if (isRunning) {
             btnStart.addClass("active");
-            btnStop.addClass("active");
+            btnStop.removeClass("active");
 
         }
         else {
             btnStop.addClass("active");
-            btnStart.addClass("active");
+            btnStart.removeClass("active");
 
         }
 

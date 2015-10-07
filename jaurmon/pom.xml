@@ -12,9 +12,19 @@
     <version>1.0-SNAPSHOT</version>
     <name>jaurmon</name>
     <url>http://maven.apache.org</url>
+
+    <properties>
+        <info.appName>${project.artifactId}</info.appName>
+        <info.appVersion>${project.version}</info.appVersion>
+        <info.singleJar>jar-with-dependencies</info.singleJar>
+        <info.singleJarPath>${project.basedir}/target/${info.appName}-${info.appVersion}-${info.singleJar}.jar</info.singleJarPath>
+        <info.configFolder>${project.basedir}/config</info.configFolder>
+        <info.script>${project.basedir}/izpack/startMonitor.sh</info.script>
+        <info.html>${project.basedir}/html</info.html>
+    </properties>
+
     <build>
         <plugins>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -45,6 +55,25 @@
                     <execution>
                         <goals>
                             <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.izpack</groupId>
+                <artifactId>izpack-maven-plugin</artifactId>
+                <version>5.0.5</version>
+                <configuration>
+                    <autoIncludeUrl>true</autoIncludeUrl>
+                    <finalName>${project.build.finalName}-installer</finalName>
+                    <baseDir>${basedir}/target</baseDir>
+                    <installFile>${basedir}/izpack/install.xml</installFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>izpack</goal>
                         </goals>
                     </execution>
                 </executions>

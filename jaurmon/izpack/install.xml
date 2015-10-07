@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="iso-8859-1" standalone="yes" ?>
+<installation version="5.0">
+    <info>
+        <appname>@{info.appName}</appname>
+        <appversion>@{info.appVersion}</appversion>
+        <authors>
+            <author name="Stefano Brega" email="br.stefano@gmail.com"/>
+        </authors>
+        <javaversion>1.7</javaversion>
+        <requiresjdk>no</requiresjdk>
+    </info>
+
+    <guiprefs width="640" height="480" resizable="no"/>
+
+    <locale>
+        <langpack iso3="ita"/>
+        <langpack iso3="eng"/>
+    </locale>
+
+    <panels>
+        <panel classname="HelloPanel"/>
+        <panel classname="TargetPanel"/>
+        <panel classname="InstallPanel"/>
+        <panel classname="FinishPanel"/>
+    </panels>
+
+    <packs>
+        <pack name="Core" required="yes" preselected="yes">
+            <description>Core installation files</description>
+            <file src="@{info.singleJarPath}" targetdir="$INSTALL_PATH" unpack="false"/>
+            <file src="@{info.configFolder}" targetdir="$INSTALL_PATH" unpack="false"/>
+            <file src="@{info.script}" targetdir="$INSTALL_PATH" unpack="false"/>
+            <file src="@{info.html}" targetdir="$INSTALL_PATH" unpack="false"/>
+        </pack>
+    </packs>
+
+
+</installation>
