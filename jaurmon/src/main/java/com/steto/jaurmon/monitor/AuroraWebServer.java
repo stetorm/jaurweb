@@ -50,7 +50,7 @@ class InverterCmdHandler extends AbstractHandler {
             String[] pathList = request.getRequestURI().split("/");
             commandReceived = pathList[pathList.length - 1];
 
-            log.info("Requested handled: " + commandReceived);
+            log.info("Handling request: " + commandReceived);
             MonitorCommand monitorCommand = null;
             Map<String, String> queryMap = null;
             if (request.getQueryString() != null && !request.getQueryString().isEmpty()) {
@@ -93,6 +93,7 @@ class InverterCmdHandler extends AbstractHandler {
             responseString = errMsg;
             log.severe(errMsg);
         } finally {
+            log.info("Response to request: "+commandReceived+", is: " + responseString);
             response.setContentType("text/html;charset=utf-8");
             response.getWriter().println(responseString);
             baseRequest.setHandled(true);
@@ -159,12 +160,22 @@ public class AuroraWebServer implements Runnable {
         try {
             auroraMonitor.init();
             auroraMonitor.startPvOutput();
-            server.start();
             log.info("Web Server Started...");
-            server.join();
-            log.info("Web Server Joined...");
         } catch (Exception e) {
-            log.severe("Fatal error: " + e.getMessage());
+            log.severe("Problems initializing Aurora Inverter Driver: " + e.getMessage());
+        }
+        finally
+        {
+            try {
+                server.start();
+                server.join();
+                log.info("Web Server Started...");
+                log.info("Web Server Joined...");
+            } catch (Exception e) {
+                log.severe("Problems starting Web Server...");
+                e.printStackTrace();
+            }
+
         }
 
     }

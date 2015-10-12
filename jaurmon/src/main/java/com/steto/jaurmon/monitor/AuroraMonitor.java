@@ -167,15 +167,11 @@ public class AuroraMonitor {
 
     protected void initInverterDriver(String serialPortName, int serialPortBaudRate) throws SerialPortException {
 
-        try {
-            SerialPort newSerialPort = new SerialPort(serialPortName);
-            newSerialPort.openPort();//Open serial port
-            newSerialPort.setParams(serialPortBaudRate, 8, 1, 0);//Set params.
-            auroraDriver.setSerialPort(newSerialPort);
-            log.info("Serial Port initialized with values: " + serialPortName + ", " + serialPortBaudRate);
-        } catch (Exception ex) {
-            log.severe("Error initializing driver: " + ex.getMessage());
-        }
+        SerialPort newSerialPort = new SerialPort(serialPortName);
+        newSerialPort.openPort();//Open serial port
+        newSerialPort.setParams(serialPortBaudRate, 8, 1, 0);//Set params.
+        auroraDriver.setSerialPort(newSerialPort);
+        log.info("Serial Port initialized with values: " + serialPortName + ", " + serialPortBaudRate);
     }
 
     public void setPvOutputUrl(String pvOutputUrl) {
@@ -234,12 +230,10 @@ public class AuroraMonitor {
         } catch (Exception e) {
             log.severe("Error publishing data to PVOutput: " + e.getMessage());
         }
-        executed = (responseCode== 200);
+        executed = (responseCode == 200);
         if (!executed) {
             savePvOutputRecord(pvOutputRecord);
-        }
-        else
-        {
+        } else {
             log.info("Dati inviati a PVOutput: \n" + getActualPvOutputValues());
         }
 
@@ -478,7 +472,7 @@ public class AuroraMonitor {
         try {
             InputStream inputStream = new FileInputStream(new File(configurationFileName));
             properties.load(inputStream);
-            log.info("Valori letti dal file: "+configurationFileName+",\n "+properties.toString());
+            log.info("Valori letti dal file: " + configurationFileName + ",\n " + properties.toString());
             currentProperty = "pvOutputSystemId";
             result.systemId = Integer.parseInt(properties.getProperty(currentProperty));
             currentProperty = "pvOutputPeriod";
@@ -642,13 +636,13 @@ public class AuroraMonitor {
         return result;
     }
 
-    public String execCommand(MonCmdSaveSettings cmd) throws IOException {
+    public String execCommand(MonCmdSaveSettings cmd) throws IOException, SerialPortException {
         String result = "";
         setSerialPortBaudRate(Integer.valueOf(cmd.command.get("baudRate")));
         setSerialPortName(cmd.command.get("serialPort"));
         setInverterAddress(Integer.valueOf(cmd.command.get("inverterAddress")));
-
-        savePvOutputConfiguration();
+        saveHwSettingsConfiguration();
+        init();
         result = "{response : OK}";
         return result;
     }
@@ -723,8 +717,7 @@ public class AuroraMonitor {
 
     public void startPvOutput() {
 
-        if (pvOutputRunning)
-        {
+        if (pvOutputRunning) {
             return;
         }
         pvOutputRunning = true;
@@ -735,7 +728,7 @@ public class AuroraMonitor {
         pvOutputFeature = serviceExec.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                log.info("Thread in charge of pvoutput data publishing is: "+Thread.currentThread().getName());
+                log.info("Thread in charge of pvoutput data publishing is: " + Thread.currentThread().getName());
                 pvOutputRunning = true;
                 pvOutputjob();
                 log.finer("Job terminated");
@@ -879,10 +872,14 @@ public class AuroraMonitor {
 
     public String execCommand(MonCmdReadStatus cmd) {
         Map<String, String> mapResult = new HashMap<>();
-        String pvStatus =  getPvOutputRunningStatus() ? "on" : "off";
-        String inverterStatus =  isInverterOnline() ? "online" : "offline";
-        mapResult.put("pvOutputStatus",pvStatus);
-        mapResult.put("inverterStatus",inverterStatus);
+        boolean isPvOutRunning  = getPvOutputRunningStatus();
+        String pvStatus = getPvOutputRunningStatus() ? "on" : "off";
+        if (!isPvOutRunning) {
+            checkInverterStatus();
+        }
+        String inverterStatus = isInverterOnline() ? "online" : "offline";
+        mapResult.put("pvOutputStatus", pvStatus);
+        mapResult.put("inverterStatus", inverterStatus);
 
         return new Gson().toJson(mapResult);
     }
