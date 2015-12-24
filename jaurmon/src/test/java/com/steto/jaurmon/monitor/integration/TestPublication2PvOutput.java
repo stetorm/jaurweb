@@ -2,6 +2,7 @@ package com.steto.jaurmon.monitor.integration;
 
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurmon.monitor.*;
+import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
 import com.steto.jaurmon.utils.HttpUtils;
 import jssc.SerialPortException;
 import org.junit.After;

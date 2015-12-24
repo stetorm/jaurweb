@@ -6,9 +6,14 @@ import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
+import com.steto.jaurlib.request.AuroraRequestFactory;
 import com.steto.jaurlib.response.AResp_VersionId;
 import com.steto.jaurlib.response.AuroraResponse;
+import com.steto.jaurlib.response.AuroraResponseFactory;
 import com.steto.jaurlib.response.ResponseErrorEnum;
+import com.steto.jaurmon.monitor.cmd.*;
+import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
+import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
 import com.steto.jaurmon.utils.FormatStringUtils;
 import com.steto.jaurmon.utils.HttpUtils;
 import com.steto.jaurmon.utils.MyUtils;
@@ -29,57 +34,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
-/**
- * Created by stefano on 20/12/14.
- */
-
-enum InverterStatusEnum {
-    OFFLINE(0),
-    ONLINE(1),
-    UNCERTAIN(3);
-
-    int val;
-
-    InverterStatusEnum(int aVal) {
-
-        val = aVal;
-    }
-}
-
-class PVOutputParams {
-    int systemId;
-    float period;
-    String url;
-    String apiKey;
-
-    public Properties toProperties() {
-        Properties result = new Properties();
-
-        result.setProperty("pvOutputSystemId", String.valueOf(systemId));
-        result.setProperty("pvOutputPeriod", String.valueOf(period));
-        result.setProperty("pvOutputUrl", url);
-        result.setProperty("pvOutputApiKey", apiKey);
-
-        return result;
-    }
-
-}
-
-class HwSettings {
-    String serialPort = "/dev/tty";
-    int serialPortBaudRate = 19200;
-    int inverterAddress = 2;
-
-    public Properties toProperties() {
-        Properties result = new Properties();
-        result.setProperty("serialPort", serialPort);
-        result.setProperty("serialPortBaudRate", String.valueOf(serialPortBaudRate));
-        result.setProperty("inverterAddress", String.valueOf(inverterAddress));
-
-        return result;
-    }
-}
 
 public class AuroraMonitor {
 

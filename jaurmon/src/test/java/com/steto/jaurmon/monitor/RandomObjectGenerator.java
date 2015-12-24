@@ -1,5 +1,7 @@
 package com.steto.jaurmon.monitor;
 
+import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
+
 import java.util.Date;
 import java.util.Random;
 

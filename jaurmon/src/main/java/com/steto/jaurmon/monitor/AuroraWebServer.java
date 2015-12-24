@@ -7,6 +7,7 @@ package com.steto.jaurmon.monitor;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.request.AuroraRequestFactory;
 import com.steto.jaurlib.response.AuroraResponseFactory;
+import com.steto.jaurmon.monitor.cmd.*;
 import com.steto.jaurmon.utils.HttpUtils;
 import jssc.SerialPort;
 import jssc.SerialPortException;
@@ -180,12 +181,6 @@ public class AuroraWebServer implements Runnable {
 
     }
 
-    public static SerialPort createSerialPort(String com, int baudRate) throws SerialPortException {
-        SerialPort result = new SerialPort(com);
-        result.openPort();//Open serial port
-        result.setParams(baudRate, 8, 1, 0);//Set params.
-        return result;
-    }
 
 
     public static void main(String[] args) throws Exception {
