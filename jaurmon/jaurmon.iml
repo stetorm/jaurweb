@@ -39,5 +39,6 @@
     <orderEntry type="library" scope="TEST" name="Maven: com.google.guava:guava:18.0" level="project" />
     <orderEntry type="module" module-name="jaurinv" scope="TEST" />
     <orderEntry type="module" module-name="jaurlib" />
+    <orderEntry type="library" name="Maven: com.google.guava:guava:18.0" level="project" />
   </component>
 </module>

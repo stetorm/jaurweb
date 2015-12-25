@@ -837,6 +837,56 @@ public class AuroraMonitor {
 
         return new Gson().toJson(mapResult);
     }
+
+    /**
+     * Created by sbrega on 22/01/2015.
+     */
+
+
+
+
+
+
+
+    public static void main(String[] args) throws Exception {
+
+        Logger log = Logger.getLogger("mainLogger");
+        String configurationFileName = "aurora.cfg";
+        String logDirectoryPath = "log";
+        String workingDirectory = ".";
+        String webDirectory = "html/build/web";
+        if (args.length > 0) {
+            workingDirectory = args[0];
+            webDirectory = args[1];
+        }
+
+        configurationFileName =  workingDirectory + File.separator + "config" + File.separator + configurationFileName;
+        logDirectoryPath =  workingDirectory + File.separator + logDirectoryPath;
+
+
+        try {
+//        String serialPort = "/dev/ttys002";
+            String webDirectoryPath = workingDirectory + File.separator + webDirectory;
+//        String serialPort = "/dev/ttys001";
+
+            log.info("Creating Aurora Driver...");
+            AuroraDriver auroraDriver = new AuroraDriver(null, new AuroraRequestFactory(), new AuroraResponseFactory());
+
+
+            log.info("Creating Aurora Monitor...");
+            AuroraMonitor auroraMonitor = new AuroraMonitor(auroraDriver, configurationFileName, logDirectoryPath);
+
+            log.info("Creating Web Server...");
+            AuroraWebServer auroraWebServer = new AuroraWebServer(8080, webDirectoryPath, auroraMonitor);
+            log.info("Starting Web Server...");
+            new Thread(auroraWebServer).start();
+            Thread.sleep(1000);
+        } catch (Exception ex) {
+            System.out.println("Error at startup: " + ex.getMessage());
+            log.severe("Fatal error at startup: " + ex.getMessage());
+        }
+
+    }
 }
 
 
