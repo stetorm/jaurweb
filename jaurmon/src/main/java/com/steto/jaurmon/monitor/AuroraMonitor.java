@@ -131,19 +131,28 @@ public class AuroraMonitor {
             log.info("Starting data acquisition from inverter");
             response = auroraDriver.acquireCumulatedEnergy(hwSettings.inverterAddress, AuroraCumEnergyEnum.DAILY);
             result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            updateInverterStatus(response.getErrorCode());
+
             long cumulatedEnergy = response.getLongParam();
 
             response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_POWER_ALL);
             result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            updateInverterStatus(response.getErrorCode());
+
             long actualPower = (long) response.getFloatParam();
+            // TODO Substitute 12345 with the time span
             dailyCumulatedEnergy = cumulatedEnergy == 0 ? dailyCumulatedEnergy + (actualPower + allPowerGeneration) * 12345 / (2 * 60 * 60) : cumulatedEnergy;
             allPowerGeneration = actualPower;
             response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
             result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            updateInverterStatus(response.getErrorCode());
             allGridVoltage = response.getFloatParam();
+
             response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
             result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            updateInverterStatus(response.getErrorCode());
             inverterTemperature = response.getFloatParam();
+
             log.info("data acquisition from inverter completed");
         } catch (Exception e) {
             result = false;
@@ -154,7 +163,7 @@ public class AuroraMonitor {
             log.severe(errMsg);
         }
 
-        updateInverterStatus(result);
+
         return result;
 
     }
@@ -202,66 +211,27 @@ public class AuroraMonitor {
   */
     }
 
-    protected String execInverterCommand(Map<String, String> map) {
 
-        String opCodeParameter = map.get("opcode");
-        String subCodeParameter = map.get("subcode");
-        int addressParameter = Integer.parseInt(map.get("address"));
-        hwSettings.inverterAddress = addressParameter;
-        String responseString = "";
-        AuroraResponse auroraResponse = null;
+
+    @Subscribe
+    @AllowConcurrentEvents
+    public void handleInverterCommand(InvCmdDspData cmd) {
+        WebResponse cmdResponse;
+
         try {
-            switch (opCodeParameter) {
-                case "dspData":
-                    responseString = execDspDataInverterCommand(subCodeParameter, addressParameter);
-                    break;
-                case "cumEnergy":
-                    responseString = "";
-                    break;
-                case "productNumber":
-                    auroraResponse = auroraDriver.acquireProductNumber(addressParameter);
-                    break;
-                case "serialNumber":
-                    auroraResponse = auroraDriver.acquireSerialNumber(addressParameter);
-                    break;
-                case "versionNumber":
-                    auroraResponse = auroraDriver.acquireVersionId(addressParameter);
-                    break;
-                case "firmwareNumber":
-                    auroraResponse = auroraDriver.acquireFirmwareVersion(addressParameter);
-                    break;
-                case "manufacturingDate":
-                    auroraResponse = auroraDriver.acquireMFGdate(addressParameter);
-                    break;
-                case "sysConfig":
-                    auroraResponse = auroraDriver.acquireSystemConfig(addressParameter);
-                    break;
-                // TODO from here
-                case "timeCounter":
-                    auroraResponse = auroraDriver.acquireTimeCounter(addressParameter);
-                    break;
-                case "actualTime":
-                    auroraResponse = auroraDriver.acquireActualTime(addressParameter);
-                    break;
-                default:
-                    responseString = "Error: bad request";
-            }
+            AResp_DspData auroraResponse  = (AResp_DspData) auroraDriver.acquireDspValue(cmd.invAddress, cmd.magnitude);
+            cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(String.valueOf(auroraResponse.getFloatParam())) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
-            responseString = "ERROR!: " + e.getMessage();
-        }
-        if (responseString.isEmpty()) {
-            if (auroraResponse == null) {
-                responseString = "UNKNOWN ERROR!";
-            } else {
-                responseString = auroraResponse.getErrorCode() == ResponseErrorEnum.NONE ? auroraResponse.toString() : auroraResponse.getErrorCode().toString() + " ERROR";
-                updateInverterStatus(auroraResponse.getErrorCode() != ResponseErrorEnum.TIMEOUT);
-            }
+            String errorString = e.getMessage();
+            cmdResponse = new WebResponseNOK(-1, errorString);
         }
 
-        return responseString;
+
+        cmd.response = cmdResponse;
+
     }
-
 
     @Subscribe
     @AllowConcurrentEvents
@@ -271,6 +241,7 @@ public class AuroraMonitor {
         try {
             AResp_CumulatedEnergy auroraResponse  = (AResp_CumulatedEnergy) auroraDriver.acquireCumulatedEnergy(cmd.invAddress, cmd.period);
             cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get().toString()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             String errorString = e.getMessage();
@@ -290,6 +261,7 @@ public class AuroraMonitor {
         try {
             AResp_ProductNumber auroraResponse  = (AResp_ProductNumber) auroraDriver.acquireProductNumber(cmd.invAddress);
             cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             String errorString = e.getMessage();
@@ -309,6 +281,7 @@ public class AuroraMonitor {
         try {
             AResp_SerialNumber auroraResponse  = (AResp_SerialNumber) auroraDriver.acquireSerialNumber(cmd.invAddress);
             cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             String errorString = e.getMessage();
@@ -328,6 +301,7 @@ public class AuroraMonitor {
         try {
             AResp_VersionId auroraResponse  = (AResp_VersionId) auroraDriver.acquireVersionId(cmd.invAddress);
             cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.toString()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             String errorString = e.getMessage();
@@ -347,6 +321,7 @@ public class AuroraMonitor {
         try {
             AResp_FwVersion auroraResponse  = (AResp_FwVersion) auroraDriver.acquireFirmwareVersion(cmd.invAddress);
             cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             String errorString = e.getMessage();
@@ -366,6 +341,7 @@ public class AuroraMonitor {
         try {
             AResp_SysConfig auroraResponse  = (AResp_SysConfig) auroraDriver.acquireSystemConfig(cmd.invAddress);
             cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(String.valueOf(auroraResponse.getConfigCode())) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             String errorString = e.getMessage();
@@ -385,6 +361,7 @@ public class AuroraMonitor {
         try {
             AResp_MFGdate auroraResponse  = (AResp_MFGdate) auroraDriver.acquireMFGdate(cmd.invAddress);
             cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get().toString()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             String errorString = e.getMessage();
@@ -404,6 +381,7 @@ public class AuroraMonitor {
         try {
             AResp_TimeCounter auroraResponse  = (AResp_TimeCounter) auroraDriver.acquireTimeCounter(cmd.invAddress);
             cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get().toString()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             String errorString = e.getMessage();
@@ -423,6 +401,7 @@ public class AuroraMonitor {
         try {
             AResp_ActualTime auroraResponse  = (AResp_ActualTime) auroraDriver.acquireActualTime(cmd.invAddress);
             cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get().toString()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             String errorString = e.getMessage();
@@ -440,6 +419,7 @@ public class AuroraMonitor {
         AuroraDspRequestEnum dspRequestEnum = mapDspCmd.get(subCodeParameter);
         try {
             auroraResponse = auroraDriver.acquireDspValue(addressParameter, dspRequestEnum);
+            updateInverterStatus(auroraResponse.getErrorCode() );
 
         } catch (Exception e) {
             errorString = "ERROR! " + e.getMessage();
@@ -501,22 +481,23 @@ public class AuroraMonitor {
         result = result == null ? badResult : result;
 
         log.fine("Check Status Result: " + result.getErrorCode());
-        updateInverterStatus(result.getErrorCode() == ResponseErrorEnum.CRC || result.getErrorCode() == ResponseErrorEnum.NONE);
+        updateInverterStatus(result.getErrorCode() );
 
 
     }
 
-    private void updateInverterStatus(boolean acquisitionSuccessfull) {
+    private void updateInverterStatus(ResponseErrorEnum acquisitionOutcome) {
 
+        boolean correct = (acquisitionOutcome == ResponseErrorEnum.NONE);
         switch (inverterStatus) {
             case OFFLINE:
-                inverterStatus = acquisitionSuccessfull ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
+                inverterStatus = correct ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
                 break;
             case ONLINE:
-                inverterStatus = acquisitionSuccessfull ? InverterStatusEnum.ONLINE : InverterStatusEnum.UNCERTAIN;
+                inverterStatus = correct ? InverterStatusEnum.ONLINE : InverterStatusEnum.UNCERTAIN;
                 break;
             case UNCERTAIN:
-                inverterStatus = acquisitionSuccessfull ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
+                inverterStatus = correct ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
                 break;
 
         }

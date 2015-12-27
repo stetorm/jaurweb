@@ -2,6 +2,8 @@ package com.steto.jaurmon.monitor.webserver;
 
 import com.google.common.eventbus.EventBus;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
+import com.steto.jaurlib.request.AuroraDspRequestEnum;
+import com.steto.jaurmon.monitor.WebResponseNOK;
 import com.steto.jaurmon.monitor.cmd.*;
 import com.steto.jaurmon.utils.HttpUtils;
 import org.eclipse.jetty.server.Request;
@@ -13,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /**
@@ -31,6 +34,7 @@ class InverterCmdHandler extends AbstractHandler {
     protected MonCmdInverter createMonitorInverterCommand(Map map) {
 
         Map<String, AuroraCumEnergyEnum> mapEnergyCmd = new HashMap<>();
+        Map<String, AuroraDspRequestEnum> mapDspCmd= new HashMap<>();
 
         mapEnergyCmd.put("daily", AuroraCumEnergyEnum.DAILY);
         mapEnergyCmd.put("weekly", AuroraCumEnergyEnum.WEEKLY);
@@ -40,6 +44,17 @@ class InverterCmdHandler extends AbstractHandler {
         mapEnergyCmd.put("partial", AuroraCumEnergyEnum.PARTIAL);
         mapEnergyCmd.put("total", AuroraCumEnergyEnum.TOTAL);
 
+        mapDspCmd.put("freqAll", AuroraDspRequestEnum.FREQUENCY_ALL);
+        mapDspCmd.put("gridVoltageAll", AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
+        mapDspCmd.put("gridCurrentAll", AuroraDspRequestEnum.GRID_CURRENT_ALL);
+        mapDspCmd.put("gridPowerAll", AuroraDspRequestEnum.GRID_POWER_ALL);
+        mapDspCmd.put("input1Voltage", AuroraDspRequestEnum.INPUT_1_VOLTAGE);
+        mapDspCmd.put("input1Current", AuroraDspRequestEnum.INPUT_1_CURRENT);
+        mapDspCmd.put("input2Voltage", AuroraDspRequestEnum.INPUT_2_VOLTAGE);
+        mapDspCmd.put("input2Current", AuroraDspRequestEnum.INPUT_2_CURRENT);
+        mapDspCmd.put("inverterTemp", AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
+        mapDspCmd.put("boosterTemp", AuroraDspRequestEnum.BOOSTER_TEMPERATURE_GRID_TIED);
+
         String opCodeParameter = (String) map.get("opcode");
         String subCodeParameter = (String) map.get("subcode");
         int addressParameter = Integer.parseInt((String) map.get("address"));
@@ -48,6 +63,10 @@ class InverterCmdHandler extends AbstractHandler {
             case "cumEnergy":
                 AuroraCumEnergyEnum period = mapEnergyCmd.get(subCodeParameter);
                 result = new InvCmdCumEnergy(addressParameter, period);
+                break;
+            case "dspData":
+                AuroraDspRequestEnum magnitude = mapDspCmd.get(subCodeParameter);
+                result = new InvCmdDspData(addressParameter, magnitude);
                 break;
             case "productNumber":
                 result = new InvCmdProductNumber(addressParameter);
@@ -146,7 +165,7 @@ class InverterCmdHandler extends AbstractHandler {
 
             } else {
                 String errMsg = "Received UNKNOWN Command: " + commandReceived;
-                responseString = errMsg;
+                responseString = new WebResponseNOK(1,errMsg).toJson();
                 log.severe(errMsg);
 
             }

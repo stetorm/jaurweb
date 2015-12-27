@@ -7,12 +7,12 @@ import com.google.gson.Gson;
  */
 public class WebResponseNOK extends WebResponse
 {
-    class _Error
+    public class _Error
     {
-        Integer code;
-        String message;
+        public Integer code;
+        public String message;
     }
-    _Error error = new _Error();
+    public _Error error = new _Error();
 
     public WebResponseNOK(int errorCode, String errorString) {
         error.code=errorCode;
