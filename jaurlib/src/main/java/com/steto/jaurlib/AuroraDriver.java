@@ -199,11 +199,12 @@ public class AuroraDriver {
 
     public synchronized AuroraResponse acquireActualTime(int address) throws Exception {
 
-        return acquireData(address, auroraRequestFactory.createAReq_ActualTime());
+        return acquireData(address);
 
     }
 
-    public synchronized AuroraResponse acquireData(int address, AuroraRequest auroraRequest) throws Exception {
+    public synchronized AuroraResponse acquireData(int address) throws Exception {
+        AuroraRequest auroraRequest =  auroraRequestFactory.createAReq_ActualTime();
         log.info("Sending Request "+auroraRequest+"to address: " + address);
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);

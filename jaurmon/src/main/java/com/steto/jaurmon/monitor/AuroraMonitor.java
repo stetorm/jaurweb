@@ -7,14 +7,8 @@ import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
-import com.steto.jaurlib.response.AResp_CumulatedEnergy;
-import com.steto.jaurlib.response.AResp_VersionId;
-import com.steto.jaurlib.response.AuroraResponse;
-import com.steto.jaurlib.response.ResponseErrorEnum;
-import com.steto.jaurmon.monitor.cmd.InvCmdCumEnergy;
-import com.steto.jaurmon.monitor.cmd.MonCmdLoadConfig;
-import com.steto.jaurmon.monitor.cmd.MonCmdReadStatus;
-import com.steto.jaurmon.monitor.cmd.MonCmdSaveSettings;
+import com.steto.jaurlib.response.*;
+import com.steto.jaurmon.monitor.cmd.*;
 import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
 import jssc.SerialPort;
 import jssc.SerialPortException;
@@ -242,6 +236,7 @@ public class AuroraMonitor {
                 case "sysConfig":
                     auroraResponse = auroraDriver.acquireSystemConfig(addressParameter);
                     break;
+                // TODO from here
                 case "timeCounter":
                     auroraResponse = auroraDriver.acquireTimeCounter(addressParameter);
                     break;
@@ -270,7 +265,7 @@ public class AuroraMonitor {
 
     @Subscribe
     @AllowConcurrentEvents
-    public void execCumEnergyInverterCommand(InvCmdCumEnergy cmd) {
+    public void handleInverterCommand(InvCmdCumEnergy cmd) {
         WebResponse cmdResponse;
 
         try {
@@ -287,6 +282,157 @@ public class AuroraMonitor {
 
     }
 
+    @Subscribe
+    @AllowConcurrentEvents
+    public void handleInverterCommand(InvCmdProductNumber cmd) {
+        WebResponse cmdResponse;
+
+        try {
+            AResp_ProductNumber auroraResponse  = (AResp_ProductNumber) auroraDriver.acquireProductNumber(cmd.invAddress);
+            cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+
+        } catch (Exception e) {
+            String errorString = e.getMessage();
+            cmdResponse = new WebResponseNOK(-1, errorString);
+        }
+
+
+        cmd.response = cmdResponse;
+
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
+    public void handleInverterCommand(InvCmdSerialNumber cmd) {
+        WebResponse cmdResponse;
+
+        try {
+            AResp_SerialNumber auroraResponse  = (AResp_SerialNumber) auroraDriver.acquireSerialNumber(cmd.invAddress);
+            cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+
+        } catch (Exception e) {
+            String errorString = e.getMessage();
+            cmdResponse = new WebResponseNOK(-1, errorString);
+        }
+
+
+        cmd.response = cmdResponse;
+
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
+    public void handleInverterCommand(InvCmdVersionNumber cmd) {
+        WebResponse cmdResponse;
+
+        try {
+            AResp_VersionId auroraResponse  = (AResp_VersionId) auroraDriver.acquireVersionId(cmd.invAddress);
+            cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.toString()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+
+        } catch (Exception e) {
+            String errorString = e.getMessage();
+            cmdResponse = new WebResponseNOK(-1, errorString);
+        }
+
+
+        cmd.response = cmdResponse;
+
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
+    public void handleInverterCommand(InvCmdFirmwareVersion cmd) {
+        WebResponse cmdResponse;
+
+        try {
+            AResp_FwVersion auroraResponse  = (AResp_FwVersion) auroraDriver.acquireFirmwareVersion(cmd.invAddress);
+            cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+
+        } catch (Exception e) {
+            String errorString = e.getMessage();
+            cmdResponse = new WebResponseNOK(-1, errorString);
+        }
+
+
+        cmd.response = cmdResponse;
+
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
+    public void handleInverterCommand(InvCmdSysConfig cmd) {
+        WebResponse cmdResponse;
+
+        try {
+            AResp_SysConfig auroraResponse  = (AResp_SysConfig) auroraDriver.acquireSystemConfig(cmd.invAddress);
+            cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(String.valueOf(auroraResponse.getConfigCode())) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+
+        } catch (Exception e) {
+            String errorString = e.getMessage();
+            cmdResponse = new WebResponseNOK(-1, errorString);
+        }
+
+
+        cmd.response = cmdResponse;
+
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
+    public void handleInverterCommand(InvCmdMFGdate cmd) {
+        WebResponse cmdResponse;
+
+        try {
+            AResp_MFGdate auroraResponse  = (AResp_MFGdate) auroraDriver.acquireMFGdate(cmd.invAddress);
+            cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get().toString()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+
+        } catch (Exception e) {
+            String errorString = e.getMessage();
+            cmdResponse = new WebResponseNOK(-1, errorString);
+        }
+
+
+        cmd.response = cmdResponse;
+
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
+    public void handleInverterCommand(InvCmdTimeCounter cmd) {
+        WebResponse cmdResponse;
+
+        try {
+            AResp_TimeCounter auroraResponse  = (AResp_TimeCounter) auroraDriver.acquireTimeCounter(cmd.invAddress);
+            cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get().toString()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+
+        } catch (Exception e) {
+            String errorString = e.getMessage();
+            cmdResponse = new WebResponseNOK(-1, errorString);
+        }
+
+
+        cmd.response = cmdResponse;
+
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
+    public void handleInverterCommand(InvCmdActualTime cmd) {
+        WebResponse cmdResponse;
+
+        try {
+            AResp_ActualTime auroraResponse  = (AResp_ActualTime) auroraDriver.acquireActualTime(cmd.invAddress);
+            cmdResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new WebResponseOK(auroraResponse.get().toString()) : new WebResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+
+        } catch (Exception e) {
+            String errorString = e.getMessage();
+            cmdResponse = new WebResponseNOK(-1, errorString);
+        }
+
+
+        cmd.response = cmdResponse;
+
+    }
 
     protected String execDspDataInverterCommand(String subCodeParameter, int addressParameter) {
         AuroraResponse auroraResponse = null;
