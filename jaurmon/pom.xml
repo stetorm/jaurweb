@@ -38,7 +38,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Main-Class>com.steto.jaurmon.monitor.AuroraWebServer</Main-Class>
+                            <Main-Class>com.steto.jaurmon.monitor.webserver.AuroraWebServer</Main-Class>
                             <version>${project.version}</version>
                         </manifestEntries>
                     </archive>
@@ -148,7 +148,6 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>18.0</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.steto</groupId>

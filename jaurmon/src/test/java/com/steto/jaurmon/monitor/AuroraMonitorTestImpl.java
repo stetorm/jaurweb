@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 
 
-public class AuroraMonitorTestImpl extends AuroraMonitor {
+public class AuroraMonitorTestImpl extends AuroraMonitorOld {
 
 
     public String lastPvOutputDataPublished="";

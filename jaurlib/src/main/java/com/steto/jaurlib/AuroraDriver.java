@@ -119,9 +119,9 @@ public class AuroraDriver {
         log.info("Sending Cumulated Energy Request to: " + address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReq_CumulatedEnergy(requestedValue);
         sendRequest(address, auroraRequest);
-        AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
-        return responseMsg;
+        AuroraResponse response = readResponse(auroraRequest);
+        log.info("Received response: " + response);
+        return response;
 
     }
 
