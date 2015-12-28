@@ -1,7 +1,5 @@
 package com.steto.jaurmon.monitor.cmd;
 
-import java.util.Map;
-
 /**
  * Created by stefano on 26/12/14.
  */

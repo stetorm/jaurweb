@@ -70,7 +70,12 @@ public class AResp_MFGdate extends AuroraResponse {
 
     @Override
     public String toString() {
-        return description.isEmpty()?super.toString(): description+": "+new SimpleDateFormat("MMMMM yyyy").format(get());
+        return description.isEmpty()? super.toString(): description+": "+getValue();
+    }
+
+    @Override
+    public String getValue() {
+        return new SimpleDateFormat("MMMMM yyyy").format(get());
     }
 
 

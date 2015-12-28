@@ -2,7 +2,6 @@ package com.steto.jaurmon.monitor.cmd;
 
 import com.steto.jaurmon.monitor.WebResponse;
 
-import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**

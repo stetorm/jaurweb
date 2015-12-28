@@ -51,4 +51,10 @@ public class AResp_String6 extends AuroraResponse {
     public String toString() {
         return description.isEmpty() ? super.toString() : description+": "+get();
     }
+
+    @Override
+    public String getValue() {
+        return get();
+    }
+
 }

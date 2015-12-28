@@ -26,4 +26,8 @@ public class AResp_CumulatedEnergy extends AuroraResponse {
     }
 
 
+    @Override
+    public String getValue() {
+        return Long.toString(get());
+    }
 }

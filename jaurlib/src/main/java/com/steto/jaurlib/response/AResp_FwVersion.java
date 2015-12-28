@@ -46,4 +46,11 @@ public class AResp_FwVersion extends AuroraResponse {
         return description.isEmpty()?super.toString(): description+": "+get();
     }
 
+
+
+    @Override
+    public String getValue() {
+        return get();
+    }
+
 }

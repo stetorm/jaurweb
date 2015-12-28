@@ -12,6 +12,11 @@ public class AResp_ActualTime extends AuroraResponse {
     static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
     static long msecBase = 0;
 
+    @Override
+    public String getValue() {
+        return Long.toString(get());
+    }
+
     public AResp_ActualTime() {
         super();
         try {

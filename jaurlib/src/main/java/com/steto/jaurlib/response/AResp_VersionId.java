@@ -21,7 +21,7 @@ public class AResp_VersionId extends AuroraResponse {
 
     @Override
     public String toString() {
-        String localDescription = "Model: " + getModelName() + ", Nationality: " + getNationality() + ", Transformer " + getTransformerInfo() + ", Type: " + getType();
+        String localDescription = getValue();
         return description.isEmpty() ? super.toString() : description + " " + localDescription;
     }
 
@@ -45,4 +45,11 @@ public class AResp_VersionId extends AuroraResponse {
         AI_ModelsEnum type = AI_ModelsEnum.fromCode(getParam1());
         return type == null ? "UNKNOWN" : type.toString();
     }
+
+    @Override
+    public String getValue() {
+        String localDescription = "Model: " + getModelName() + ", Nationality: " + getNationality() + ", Transformer " + getTransformerInfo() + ", Type: " + getType();
+        return localDescription;
+    }
+
 }
