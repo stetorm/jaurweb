@@ -3,8 +3,7 @@ package com.steto.jaurlib.eventbus;
 /**
  * Created by stefano on 28/12/15.
  */
-public class EventBusInverterRequest {
-    protected EBResponse response=null;
+public class EventBusInverterRequest extends EventBusRequest{
     private String opcode;
     private final String subcode;
     private final int address;
@@ -17,10 +16,7 @@ public class EventBusInverterRequest {
     }
 
 
-    public EBResponse getResponse()
-    {
-        return response;
-    }
+
 
     public String opcode() {
         return opcode;

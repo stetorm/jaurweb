@@ -3,13 +3,16 @@ package com.steto.jaurmon.monitor.integration;
 import com.google.common.eventbus.EventBus;
 import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
+import com.steto.jaurlib.cmd.InverterCommandFactory;
+import com.steto.jaurlib.eventbus.EBResponseNOK;
+import com.steto.jaurlib.eventbus.EBResponseOK;
+import com.steto.jaurlib.eventbus.EventBusAdapter;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
 import com.steto.jaurlib.response.*;
 import com.steto.jaurmon.monitor.AuroraMonitor;
 import com.steto.jaurmon.monitor.FakeAuroraWebClient;
-import com.steto.jaurmon.monitor.WebResponseNOK;
-import com.steto.jaurmon.monitor.WebResponseOK;
+
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
 import jssc.SerialPortException;
 import org.junit.After;
@@ -41,6 +44,7 @@ public class TestCoreMonitorWebCommands {
     String pvOutDirPath;
     EventBus theEventBus = new EventBus();
     AuroraDriver auroraDriver = mock(AuroraDriver.class);
+    EventBusAdapter eventBusAdapter = new EventBusAdapter(theEventBus,auroraDriver,new InverterCommandFactory());
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -125,7 +129,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseNOK result = new Gson().fromJson(jsonResult, WebResponseNOK.class);
+        EBResponseNOK result = new Gson().fromJson(jsonResult, EBResponseNOK.class);
 
         assertEquals(1,result.error.code.intValue());
         assertTrue(result.error.message.length() > 0);
@@ -159,7 +163,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
         float energyReadout = Float.parseFloat(result.data.value);
 
         assertEquals(expectedCumulateEnergyValue, energyReadout, 0.00001);
@@ -192,7 +196,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
         float voltageReadout = Float.parseFloat(result.data.value);
 
         assertEquals(expectedVoltageAll, voltageReadout, 0.00001);
@@ -225,7 +229,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
         assertEquals(productNumber, result.data.value);
 
@@ -257,7 +261,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
         assertEquals(serialNumber, result.data.value);
 
@@ -276,7 +280,7 @@ public class TestCoreMonitorWebCommands {
 
         AResp_VersionId expectedVersionId = new AResp_VersionId();
         expectedVersionId.setLongParam(versionNumber);
-        String versionDescription = expectedVersionId.toString();
+        String versionDescription = expectedVersionId.getValue();
         when(auroraDriver.acquireVersionId(eq(inverterAddress))).thenReturn(expectedVersionId);
 
         // Setup FakeClient
@@ -289,7 +293,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
         assertEquals(versionDescription, result.data.value);
 
@@ -318,7 +322,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
         assertEquals(firmareVersion, result.data.value);
 
@@ -334,7 +338,7 @@ public class TestCoreMonitorWebCommands {
 
         AResp_MFGdate expectedResponse = new AResp_MFGdate();
         expectedResponse.setDate(new Date());
-        String maufactoringDate = expectedResponse.get().toString();
+        String maufactoringDate = expectedResponse.getValue();
         when(auroraDriver.acquireMFGdate(eq(inverterAddress))).thenReturn(expectedResponse);
 
         // Setup FakeClient
@@ -347,7 +351,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
         assertEquals(maufactoringDate, result.data.value);
 
@@ -376,7 +380,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
         assertEquals(systemConfig, Integer.parseInt(result.data.value));
 
@@ -405,7 +409,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
         assertEquals(timeCounter, result.data.value);
 
@@ -434,7 +438,7 @@ public class TestCoreMonitorWebCommands {
         //verify
         System.out.println(jsonResult);
 
-        WebResponseOK result = new Gson().fromJson(jsonResult, WebResponseOK.class);
+        EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
         assertEquals(timeCounter, result.data.value);
 

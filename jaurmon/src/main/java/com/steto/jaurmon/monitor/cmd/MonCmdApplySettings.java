@@ -1,5 +1,7 @@
 package com.steto.jaurmon.monitor.cmd;
 
+import com.steto.jaurlib.eventbus.EventBusRequest;
+
 import java.util.Map;
 
 /**
@@ -7,7 +9,7 @@ import java.util.Map;
  */
 
 
-public class MonCmdApplySettings extends MonitorCommand {
+public class MonCmdApplySettings extends EventBusRequest {
     protected MonCmdApplySettings(Map<String, String> params) {
         super(params);
     }
