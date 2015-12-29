@@ -123,10 +123,11 @@ public class AuroraInverter implements Runnable, AuroraResponseBuilder {
 
         try {
             running = true;
-            log.info("Running and waiting for a request");
             serialPort.openPort();//Open serial port
             serialPort.setParams(19200, 8, 1, 0);//Set params.
             serialPort.purgePort(SerialPort.PURGE_RXCLEAR | SerialPort.PURGE_TXCLEAR);
+            log.info("Serial Port: "+serialPort.getPortName()+" opened successfully");
+            log.info("Running and waiting for a request");
             while (running) {
 
                 AuroraRequest request = null;

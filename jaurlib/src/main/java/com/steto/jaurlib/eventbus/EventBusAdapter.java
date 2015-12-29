@@ -29,14 +29,22 @@ public class EventBusAdapter {
     @Subscribe
     @AllowConcurrentEvents
     public void handleInverterCommand(EventBusInverterRequest cmd) {
-        EBResponse ebResponse;
+        EBResponse ebResponse=null;
 
-        InverterCommand inverterCommand = inverterCommandFactory.create(cmd.opcode(), cmd.subcode(), cmd.address());
 
         try {
-            AuroraResponse auroraResponse = inverterCommand.execute(auroraDriver);
+            InverterCommand inverterCommand = inverterCommandFactory.create(cmd.opcode(), cmd.subcode(), cmd.address());
 
-            ebResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new EBResponseOK(auroraResponse.getValue()) : new EBResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            if (inverterCommand!=null) {
+
+                AuroraResponse auroraResponse = inverterCommand.execute(auroraDriver);
+
+                ebResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new EBResponseOK(auroraResponse.getValue()) : new EBResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
+            }
+            else
+            {
+                ebResponse = new EBResponseNOK(1, "Unrecognized Command");
+            }
 
         } catch (Exception e) {
             String errorString = e.getMessage();

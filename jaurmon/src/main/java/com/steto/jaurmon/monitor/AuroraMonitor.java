@@ -5,12 +5,16 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
+import com.steto.jaurlib.cmd.InverterCommandFactory;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
+import com.steto.jaurlib.eventbus.EventBusAdapter;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
+import com.steto.jaurlib.request.AuroraRequestFactory;
 import com.steto.jaurlib.response.*;
 import com.steto.jaurmon.monitor.cmd.*;
 import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
+import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
 import jssc.SerialPort;
 import jssc.SerialPortException;
 
@@ -104,7 +108,7 @@ public class AuroraMonitor {
         newSerialPort.openPort();//Open serial port
         newSerialPort.setParams(serialPortBaudRate, 8, 1, 0);//Set params.
         auroraDriver.setSerialPort(newSerialPort);
-        log.info("Serial Port initialized with values: " + serialPortName + ", " + serialPortBaudRate);
+        log.info("Serial Port: "+newSerialPort.getPortName()+" initialized with values: " + serialPortName + ", " + serialPortBaudRate);
     }
 
 
@@ -323,6 +327,50 @@ public class AuroraMonitor {
 
         }
     }
+
+    public static void main(String[] args) throws Exception {
+
+        Logger log = Logger.getLogger("mainLogger");
+        String configurationFileName = "aurora.cfg";
+        String logDirectoryPath = "log";
+        String workingDirectory = ".";
+        String webDirectory = "html/";
+        if (args.length > 0) {
+            workingDirectory = args[0];
+            webDirectory = args[1];
+        }
+
+        configurationFileName =  workingDirectory + File.separator + "config" + File.separator + configurationFileName;
+        logDirectoryPath =  workingDirectory + File.separator + logDirectoryPath;
+
+
+        try {
+//        String serialPort = "/dev/ttys002";
+            String webDirectoryPath = workingDirectory + File.separator + webDirectory;
+//        String serialPort = "/dev/ttys001";
+
+            log.info("Creating Aurora Driver...");
+            AuroraDriver auroraDriver = new AuroraDriver(null, new AuroraRequestFactory(), new AuroraResponseFactory());
+
+
+            log.info("Creating Aurora Monitor...");
+            EventBus theEventBus = new EventBus();
+            AuroraMonitor auroraMonitor = new AuroraMonitor(theEventBus,auroraDriver, configurationFileName, logDirectoryPath);
+            EventBusAdapter eventBusAdapter = new EventBusAdapter(theEventBus,auroraDriver, new InverterCommandFactory());
+            auroraMonitor.init();
+
+            log.info("Creating Web Server...");
+            AuroraWebServer auroraWebServer = new AuroraWebServer(8080, webDirectoryPath, theEventBus);
+            log.info("Starting Web Server...");
+            new Thread(auroraWebServer).start();
+            Thread.sleep(1000);
+        } catch (Exception ex) {
+            System.out.println("Error at startup: " + ex.getMessage());
+            log.severe("Fatal error at startup: " + ex.getMessage());
+        }
+
+    }
+
 }
 
 

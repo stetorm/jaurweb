@@ -451,7 +451,17 @@
             console.log("Executed command: " + urlString + " with response: " + status);
             textOutput = $("#areaResult").text();
             if (textOutput != null) {
-                $("#areaResult").text(msg + textOutput);
+                var dispValue;
+                var jsonMsg =  JSON.parse(msg);
+                if("error" in jsonMsg)
+                {
+                    dispValue = "ERROR: "+jsonMsg.error.message;
+                }
+                else
+                {
+                    dispValue = jsonMsg.data.value;
+                }
+                $("#areaResult").text(dispValue + "\n"+ textOutput);
 
             }
 
