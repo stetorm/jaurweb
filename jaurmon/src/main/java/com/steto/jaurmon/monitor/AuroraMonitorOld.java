@@ -398,6 +398,8 @@ public class AuroraMonitorOld {
 
     protected HwSettings loadHwSettings() {
 
+
+
         Properties properties = new Properties();
         HwSettings result = new HwSettings();
 
@@ -469,14 +471,7 @@ public class AuroraMonitorOld {
 
         Properties hwSettingsProperties = hwSettings.toProperties();
 
-        PVOutputParams filePvOutputParams = loadPvOutputConfiguration();
         Properties merged = new Properties();
-        if (filePvOutputParams != null) {
-            Properties filePvOutputParamsProperties = filePvOutputParams.toProperties();
-            merged.putAll(filePvOutputParamsProperties);
-        }
-        merged.putAll(hwSettingsProperties);
-
         OutputStream outputStream = new FileOutputStream(new File(configurationFileName));
         merged.store(outputStream, "");
         outputStream.close();

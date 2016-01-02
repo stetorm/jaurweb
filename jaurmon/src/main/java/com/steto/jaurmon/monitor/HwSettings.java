@@ -1,5 +1,7 @@
 package com.steto.jaurmon.monitor;
 
+import org.apache.commons.configuration.SubnodeConfiguration;
+
 import java.util.Properties;
 
 /**
@@ -18,4 +20,7 @@ public class HwSettings {
 
         return result;
     }
+
+
+
 }

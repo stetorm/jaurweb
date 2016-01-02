@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.integration;
+package com.steto.jaurmon.monitor.integration.coremon;
 
 import com.google.common.eventbus.EventBus;
 import com.google.gson.Gson;
@@ -26,7 +26,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import static junit.framework.Assert.assertEquals;
+import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;

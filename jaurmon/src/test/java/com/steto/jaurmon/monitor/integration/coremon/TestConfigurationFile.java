@@ -1,8 +1,9 @@
-package com.steto.jaurmon.monitor.integration;
+package com.steto.jaurmon.monitor.integration.coremon;
 
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurmon.monitor.AuroraMonitorTestImpl;
 import jssc.SerialPortException;
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -22,11 +23,11 @@ public class TestConfigurationFile {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
-    private String pvOutDirPath;
+    private String configFileDirPath;
 
     @Before
     public void before() throws IOException {
-        pvOutDirPath =  tempFolder.newFolder().getAbsolutePath();
+        configFileDirPath =  tempFolder.newFolder().getAbsolutePath();
 
     }
 
@@ -37,11 +38,11 @@ public class TestConfigurationFile {
     }
 
     @Test
-    public void shouldLoadAndSaveConfigurationFile() throws IOException, SerialPortException {
+    public void shouldLoadAndSaveConfigurationFile() throws IOException, SerialPortException, ConfigurationException {
         File temp = File.createTempFile("aurora", ".cfg");
         String fileName = temp.getAbsolutePath();
 
-        AuroraMonitorTestImpl auroraMonitorSave = new AuroraMonitorTestImpl(mock(AuroraDriver.class),fileName,pvOutDirPath);
+        AuroraMonitorTestImpl auroraMonitorSave = new AuroraMonitorTestImpl(mock(AuroraDriver.class),fileName, configFileDirPath);
 
         // PvOutput params
         String key="abcdefgh01234";
@@ -53,16 +54,6 @@ public class TestConfigurationFile {
         int inverterAddress=21;
         int baudRate=9600;
 
-        auroraMonitorSave.setPvOutputSystemId(systemId);
-        auroraMonitorSave.setPvOutputApiKey(key);
-        auroraMonitorSave.setPvOutputUrl(url);
-        auroraMonitorSave.setPvOutputPeriod(period);
-        auroraMonitorSave.savePvOutputConfiguration();
-        // cambio parametri Pvoutput
-        auroraMonitorSave.setPvOutputSystemId(systemId+1);
-        auroraMonitorSave.setPvOutputApiKey(key+"@");
-        auroraMonitorSave.setPvOutputUrl(url+"l");
-        auroraMonitorSave.setPvOutputPeriod(period+1);
 
         auroraMonitorSave.setInverterAddress(inverterAddress);
         auroraMonitorSave.setSerialPortBaudRate(baudRate);
@@ -70,17 +61,13 @@ public class TestConfigurationFile {
         auroraMonitorSave.saveHwSettingsConfiguration();
 
 
-        AuroraMonitorTestImpl auroraMonitorLoad = new AuroraMonitorTestImpl(mock(AuroraDriver.class),fileName,pvOutDirPath);
+        AuroraMonitorTestImpl auroraMonitorLoad = new AuroraMonitorTestImpl(mock(AuroraDriver.class),fileName, configFileDirPath);
 
 
         assertEquals(serialPort,auroraMonitorLoad.getSerialPortName());
         assertEquals(inverterAddress,auroraMonitorLoad.getInverterAddress());
         assertEquals(baudRate,auroraMonitorLoad.getSerialPortBaudRate());
 
-        assertEquals(key,auroraMonitorLoad.getPvOutputApiKey());
-        assertEquals(url,auroraMonitorLoad.getPvOutputUrl());
-        assertEquals(systemId,auroraMonitorLoad.getPvOutputSystemId());
-        assertEquals(period,auroraMonitorLoad.getPvOutputPeriod(),001);
 
     }
 }

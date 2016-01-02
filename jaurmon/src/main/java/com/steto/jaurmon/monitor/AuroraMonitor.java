@@ -3,7 +3,6 @@ package com.steto.jaurmon.monitor;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
@@ -17,15 +16,15 @@ import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
 import jssc.SerialPort;
 import jssc.SerialPortException;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.configuration.SubnodeConfiguration;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
@@ -173,23 +172,19 @@ public class AuroraMonitor {
 
     }
 
-    protected HwSettings loadHwSettings() {
+    protected HwSettings loadHwSettings()  {
 
-        Properties properties = new Properties();
         HwSettings result = new HwSettings();
 
-        String currentProperty = "";
         try {
-            InputStream inputStream = new FileInputStream(new File(configurationFileName));
-            properties.load(inputStream);
-            currentProperty = "inverterAddress";
-            result.inverterAddress = Integer.parseInt(properties.getProperty(currentProperty));
-            currentProperty = "serialPortBaudRate";
-            result.serialPortBaudRate = Integer.parseInt(properties.getProperty(currentProperty));
-            currentProperty = "serialPort";
-            result.serialPort = properties.getProperty(currentProperty);
+            HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
+            SubnodeConfiguration inverterParams = iniConfObj.getSection("inverter");
+
+            result.inverterAddress = inverterParams.getInt("address");
+            result.serialPortBaudRate = inverterParams.getInt("serialPortBaudRate");
+            result.serialPort = inverterParams.getString("serialPort");
         } catch (Exception e) {
-            log.severe("Error reading file: " + configurationFileName + ", property: " + currentProperty);
+            log.severe("Error reading file: " + configurationFileName + ", " + e.getMessage());
             result = null;
         }
 
@@ -197,23 +192,18 @@ public class AuroraMonitor {
     }
 
 
-    public void saveHwSettingsConfiguration() throws IOException {
+    public void saveHwSettingsConfiguration() throws IOException, ConfigurationException {
 
-/*
-        Properties hwSettingsProperties = hwSettings.toProperties();
 
-        PVOutputParams filePvOutputParams = loadPvOutputConfiguration();
-        Properties merged = new Properties();
-        if (filePvOutputParams != null) {
-            Properties filePvOutputParamsProperties = filePvOutputParams.toProperties();
-            merged.putAll(filePvOutputParamsProperties);
-        }
-        merged.putAll(hwSettingsProperties);
 
-        OutputStream outputStream = new FileOutputStream(new File(configurationFileName));
-        merged.store(outputStream, "");
-        outputStream.close();
-  */
+        HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
+        iniConfObj.setProperty("inverter.address", hwSettings.inverterAddress);
+        iniConfObj.setProperty("inverter.serialPortBaudRate", hwSettings.serialPortBaudRate);
+        iniConfObj.setProperty("inverter.serialPort", hwSettings.serialPort);
+
+        iniConfObj.save();
+
+
     }
 
 
