@@ -223,5 +223,12 @@ public class AuroraDriver {
     public void setSerialPort(SerialPort aSerialPort) {
         this.serialPort = aSerialPort;
     }
+
+    public void setSerialPort(String serialPortName, int serialPortBaudRate) throws SerialPortException {
+        serialPort  = new SerialPort(serialPortName);
+        serialPort.setParams(serialPortBaudRate, 8, 1, 0);//Set params.
+        serialPort.openPort();//Open serial port
+
+    }
 }
 

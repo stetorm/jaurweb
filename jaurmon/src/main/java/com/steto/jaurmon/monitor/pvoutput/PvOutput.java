@@ -588,7 +588,7 @@ public class PvOutput {
         return result;
     }
 
-    public String execCommand(MonCmdSaveSettings cmd) throws IOException, SerialPortException {
+    public String execCommand(MonReqSaveInvSettings cmd) throws IOException, SerialPortException {
         String result = "";
         setSerialPortBaudRate(Integer.valueOf(cmd.paramsMap.get("baudRate")));
         setSerialPortName(cmd.paramsMap.get("serialPort"));

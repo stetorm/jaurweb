@@ -2,7 +2,6 @@ package com.steto.jaurmon.monitor.webserver;
 
 import com.google.common.eventbus.EventBus;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
-import com.steto.jaurlib.eventbus.EBResponseOK;
 import com.steto.jaurlib.eventbus.EventBusInverterRequest;
 import com.steto.jaurlib.eventbus.EventBusRequest;
 import com.steto.jaurmon.monitor.cmd.*;
@@ -36,7 +35,7 @@ class InverterCmdHandler extends AbstractHandler {
         EventBusRequest result = null;
         switch (cmdUrl) {
             case "saveSettings":
-                result = new MonCmdSaveSettings(cmdParams);
+                result = new MonReqSaveInvSettings(cmdParams);
                 break;
             case "saveCfg":
                 result = new MonCmdSavePvOutputConfig(cmdParams);

@@ -6,7 +6,7 @@ import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
 import com.steto.jaurlib.eventbus.EBResponseOK;
-import com.steto.jaurlib.eventbus.EventBusAdapter;
+import com.steto.jaurlib.eventbus.EventBusInverterAdapter;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
 import com.steto.jaurlib.response.*;
@@ -14,6 +14,7 @@ import com.steto.jaurmon.monitor.AuroraMonitor;
 import com.steto.jaurmon.monitor.FakeAuroraWebClient;
 
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
+import jssc.SerialPort;
 import jssc.SerialPortException;
 import org.junit.After;
 import org.junit.Before;
@@ -30,6 +31,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -44,7 +46,7 @@ public class TestCoreMonitorWebCommands {
     String pvOutDirPath;
     EventBus theEventBus = new EventBus();
     AuroraDriver auroraDriver = mock(AuroraDriver.class);
-    EventBusAdapter eventBusAdapter = new EventBusAdapter(theEventBus,auroraDriver,new InverterCommandFactory());
+    EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus,auroraDriver,new InverterCommandFactory());
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -91,10 +93,10 @@ public class TestCoreMonitorWebCommands {
         String serialPort = "/TEST/COM";
         Integer baudRate = 1122;
         Integer inverterAddress = 5;
-        Map<String, String> mapConfig = new HashMap<>();
+        Map<String, Object> mapConfig = new HashMap<>();
         mapConfig.put("serialPort", serialPort);
-        mapConfig.put("baudRate", baudRate.toString());
-        mapConfig.put("inverterAddress", inverterAddress.toString());
+        mapConfig.put("baudRate", baudRate);
+        mapConfig.put("inverterAddress", inverterAddress);
 
 
         FakeAuroraWebClient fakeAuroraWebClient = new FakeAuroraWebClient("http://localhost:" + auroraServicePort);
@@ -164,7 +166,7 @@ public class TestCoreMonitorWebCommands {
         System.out.println(jsonResult);
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
-        float energyReadout = Float.parseFloat(result.data.value);
+        float energyReadout = Float.parseFloat((String) result.data.value);
 
         assertEquals(expectedCumulateEnergyValue, energyReadout, 0.00001);
 
@@ -197,7 +199,7 @@ public class TestCoreMonitorWebCommands {
         System.out.println(jsonResult);
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
-        float voltageReadout = Float.parseFloat(result.data.value);
+        float voltageReadout = Float.parseFloat((String) result.data.value);
 
         assertEquals(expectedVoltageAll, voltageReadout, 0.00001);
 
@@ -382,7 +384,7 @@ public class TestCoreMonitorWebCommands {
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
-        assertEquals(systemConfig, Integer.parseInt(result.data.value));
+        assertEquals(systemConfig, Integer.parseInt((String) result.data.value));
 
     }
 

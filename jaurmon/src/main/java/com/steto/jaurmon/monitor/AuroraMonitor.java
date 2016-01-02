@@ -3,10 +3,14 @@ package com.steto.jaurmon.monitor;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
+import com.steto.jaurlib.cmd.InverterCommand;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
+import com.steto.jaurlib.eventbus.EBResponse;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
-import com.steto.jaurlib.eventbus.EventBusAdapter;
+import com.steto.jaurlib.eventbus.EBResponseOK;
+import com.steto.jaurlib.eventbus.EventBusInverterAdapter;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
 import com.steto.jaurlib.request.AuroraRequestFactory;
@@ -21,9 +25,7 @@ import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
@@ -103,11 +105,8 @@ public class AuroraMonitor {
 
     protected void initInverterDriver(String serialPortName, int serialPortBaudRate) throws SerialPortException {
 
-        SerialPort newSerialPort = new SerialPort(serialPortName);
-        newSerialPort.openPort();//Open serial port
-        newSerialPort.setParams(serialPortBaudRate, 8, 1, 0);//Set params.
-        auroraDriver.setSerialPort(newSerialPort);
-        log.info("Serial Port: "+newSerialPort.getPortName()+" initialized with values: " + serialPortName + ", " + serialPortBaudRate);
+        auroraDriver.setSerialPort(serialPortName,serialPortBaudRate);
+        log.info("Serial Port initialized with values: " + serialPortName + ", " + serialPortBaudRate);
     }
 
 
@@ -300,6 +299,34 @@ public class AuroraMonitor {
 
     @Subscribe
     @AllowConcurrentEvents
+    public void handle(MonReqSaveInvSettings cmd) {
+
+        EBResponse ebResponse=null;
+
+        try {
+
+            HwSettings newSettings =  new Gson().fromJson(cmd.jsonParams, HwSettings.class);
+
+            setSerialPortBaudRate(newSettings.serialPortBaudRate);
+            setSerialPortName(newSettings.serialPort);
+            setInverterAddress(newSettings.inverterAddress);
+            init();
+            saveHwSettingsConfiguration();
+            String payload =  new Gson().toJson(hwSettings,HwSettings.class);
+            ebResponse =  new EBResponseOK(newSettings) ;
+
+
+        } catch (Exception e) {
+            String errorString = "Could not execute Request: "+cmd.getClass().getCanonicalName()+", "+e.getMessage();
+            ebResponse = new EBResponseNOK(-1, errorString);
+        }
+
+        cmd.response = ebResponse;
+
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
     public void execCommand(MonCmdReadStatus cmd) {
         try {
             Map<String, String> mapResult = new HashMap<>();
@@ -346,7 +373,7 @@ public class AuroraMonitor {
             log.info("Creating Aurora Monitor...");
             EventBus theEventBus = new EventBus();
             AuroraMonitor auroraMonitor = new AuroraMonitor(theEventBus,auroraDriver, configurationFileName, logDirectoryPath);
-            EventBusAdapter eventBusAdapter = new EventBusAdapter(theEventBus,auroraDriver, new InverterCommandFactory());
+            EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus,auroraDriver, new InverterCommandFactory());
             auroraMonitor.init();
 
             log.info("Creating Web Server...");

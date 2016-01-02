@@ -6,13 +6,13 @@ package com.steto.jaurlib.eventbus;
 public class EBResponseOK extends EBResponse {
 
     public class _Data {
-        public String value;
+        public Object value;
     }
 
     public _Data data = new _Data();
 
 
-    public EBResponseOK(String payload) {
+    public EBResponseOK(Object payload) {
         data.value = payload;
     }
 

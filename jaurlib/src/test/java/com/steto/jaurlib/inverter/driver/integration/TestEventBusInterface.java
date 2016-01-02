@@ -5,7 +5,7 @@ import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
 import com.steto.jaurlib.eventbus.EBResponseOK;
-import com.steto.jaurlib.eventbus.EventBusAdapter;
+import com.steto.jaurlib.eventbus.EventBusInverterAdapter;
 import com.steto.jaurlib.eventbus.EventBusInverterRequest;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
@@ -33,7 +33,7 @@ public class TestEventBusInterface {
     String pvOutDirPath;
     EventBus theEventBus = new EventBus();
     AuroraDriver auroraDriver = mock(AuroraDriver.class);
-    EventBusAdapter eventBusAdapter = new EventBusAdapter(theEventBus,auroraDriver, new InverterCommandFactory());
+    EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus,auroraDriver, new InverterCommandFactory());
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -82,7 +82,7 @@ public class TestEventBusInterface {
         EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
         System.out.println(result);
 
-        float energyReadout = Float.parseFloat(result.data.value);
+        float energyReadout = Float.parseFloat((String) result.data.value);
 
         assertEquals(expectedCumulateEnergyValue, energyReadout, 0.00001);
 
@@ -114,7 +114,7 @@ public class TestEventBusInterface {
         EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
         System.out.println(result);
 
-        float voltageReadout = Float.parseFloat(result.data.value);
+        float voltageReadout = Float.parseFloat((String) result.data.value);
 
         assertEquals(expectedVoltageAll, voltageReadout, 0.00001);
 
