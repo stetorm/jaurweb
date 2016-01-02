@@ -55,7 +55,7 @@ public class AuroraMonitor {
     private boolean pvOutputRunning = false;
     private Date lastCheckDate;
 
-    public AuroraMonitor(EventBus aEventBus, AuroraDriver auroraDriver, String configFile, String dataLogDirPath) throws IOException, SerialPortException {
+    public AuroraMonitor(EventBus aEventBus, AuroraDriver auroraDriver, String configFile, String dataLogDirPath) throws Exception {
 
         theEventBus = aEventBus;
         this.auroraDriver = auroraDriver;
@@ -171,7 +171,7 @@ public class AuroraMonitor {
 
     }
 
-    protected HwSettings loadHwSettings()  {
+    protected HwSettings loadHwSettings() throws Exception {
 
         HwSettings result = new HwSettings();
 
@@ -179,12 +179,13 @@ public class AuroraMonitor {
             HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
             SubnodeConfiguration inverterParams = iniConfObj.getSection("inverter");
 
-            result.inverterAddress = inverterParams.getInt("address");
+            result.inverterAddress = inverterParams.getInt("inverterAddress");
             result.serialPortBaudRate = inverterParams.getInt("serialPortBaudRate");
             result.serialPort = inverterParams.getString("serialPort");
         } catch (Exception e) {
-            log.severe("Error reading file: " + configurationFileName + ", " + e.getMessage());
-            result = null;
+            String errMsg = "Error reading file: " + configurationFileName + ", " + e.getMessage();
+//            log.severe("Error reading file: " + configurationFileName + ", " + e.getMessage());
+            throw  new Exception(errMsg);
         }
 
         return result;
@@ -196,7 +197,7 @@ public class AuroraMonitor {
 
 
         HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
-        iniConfObj.setProperty("inverter.address", hwSettings.inverterAddress);
+        iniConfObj.setProperty("inverter.inverterAddress", hwSettings.inverterAddress);
         iniConfObj.setProperty("inverter.serialPortBaudRate", hwSettings.serialPortBaudRate);
         iniConfObj.setProperty("inverter.serialPort", hwSettings.serialPort);
 
@@ -312,8 +313,9 @@ public class AuroraMonitor {
             setInverterAddress(newSettings.inverterAddress);
             init();
             saveHwSettingsConfiguration();
+
             String payload =  new Gson().toJson(hwSettings,HwSettings.class);
-            ebResponse =  new EBResponseOK(newSettings) ;
+            ebResponse =  new EBResponseOK(hwSettings) ;
 
 
         } catch (Exception e) {

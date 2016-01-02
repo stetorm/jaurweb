@@ -16,7 +16,7 @@ public class AuroraMonitorTestImpl extends AuroraMonitor {
 
     public String lastPvOutputDataPublished="";
 
-    public AuroraMonitorTestImpl(AuroraDriver mock, String configFile, String datalogPath) throws IOException, SerialPortException {
+    public AuroraMonitorTestImpl(AuroraDriver mock, String configFile, String datalogPath) throws Exception {
         super(new EventBus(),mock, configFile,datalogPath);
     }
 

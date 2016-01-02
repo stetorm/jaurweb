@@ -12,6 +12,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -37,10 +38,15 @@ public class TestConfigurationFile {
 
     }
 
+    public static void copyFile( File from, File to ) throws IOException {
+        Files.copy(from.toPath(), to.toPath());
+    }
+
     @Test
-    public void shouldLoadAndSaveConfigurationFile() throws IOException, SerialPortException, ConfigurationException {
-        File temp = File.createTempFile("aurora", ".cfg");
+    public void shouldLoadAndSaveConfigurationFile() throws Exception {
+        File temp = new File(configFileDirPath+"/aurora.cfg");
         String fileName = temp.getAbsolutePath();
+        copyFile(new File("resources/aurora.cfg"),temp);
 
         AuroraMonitorTestImpl auroraMonitorSave = new AuroraMonitorTestImpl(mock(AuroraDriver.class),fileName, configFileDirPath);
 

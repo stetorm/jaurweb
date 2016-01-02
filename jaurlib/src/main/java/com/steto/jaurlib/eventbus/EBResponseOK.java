@@ -5,15 +5,11 @@ package com.steto.jaurlib.eventbus;
  */
 public class EBResponseOK extends EBResponse {
 
-    public class _Data {
-        public Object value;
-    }
 
-    public _Data data = new _Data();
-
+    public final Object data;
 
     public EBResponseOK(Object payload) {
-        data.value = payload;
+        data = payload;
     }
 
     public static void main(String[] args) {

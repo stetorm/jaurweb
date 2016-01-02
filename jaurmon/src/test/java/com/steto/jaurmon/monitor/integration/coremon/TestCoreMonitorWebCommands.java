@@ -4,6 +4,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
+import com.steto.jaurlib.eventbus.EBResponse;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
 import com.steto.jaurlib.eventbus.EBResponseOK;
 import com.steto.jaurlib.eventbus.EventBusInverterAdapter;
@@ -53,7 +54,7 @@ public class TestCoreMonitorWebCommands {
 
 
     @Before
-    public void before() throws IOException, InterruptedException, SerialPortException {
+    public void before() throws Exception {
 
         pvOutDirPath = tempFolder.newFolder().getAbsolutePath();
         auroraMonitor = new AuroraMonitor(theEventBus, auroraDriver, configFile, pvOutDirPath);
@@ -88,14 +89,14 @@ public class TestCoreMonitorWebCommands {
 
 
     @Test
-    public void shouldApplySettings() throws Exception {
+    public void shouldApplyInverterSettings() throws Exception {
 
         String serialPort = "/TEST/COM";
         Integer baudRate = 1122;
         Integer inverterAddress = 5;
         Map<String, Object> mapConfig = new HashMap<>();
         mapConfig.put("serialPort", serialPort);
-        mapConfig.put("baudRate", baudRate);
+        mapConfig.put("serialPortBaudRate", baudRate);
         mapConfig.put("inverterAddress", inverterAddress);
 
 
@@ -105,6 +106,18 @@ public class TestCoreMonitorWebCommands {
         String jsonResult = fakeAuroraWebClient.sendSaveSettingsRequest(mapConfig);
 
 
+        //verify
+        System.out.println(jsonResult);
+        EBResponseOK ebResponseOK = new Gson().fromJson(jsonResult, EBResponseOK.class);
+
+        // verify json answer, gli interi vengono considerati come float
+        Map responseMap  = new Gson().fromJson(jsonResult, Map.class);
+        Map dataMap = (Map) responseMap.get("data");
+        assertEquals(serialPort,  dataMap.get("serialPort"));
+        assertEquals(String.valueOf(baudRate.floatValue()), dataMap.get("serialPortBaudRate").toString().trim());
+        assertEquals(String.valueOf(inverterAddress.floatValue()),  dataMap.get("inverterAddress").toString().trim());
+
+        // verify effects on auroraMonitorObject
         assertEquals(serialPort, auroraMonitor.getSerialPortName());
         assertEquals(baudRate.intValue(), auroraMonitor.getSerialPortBaudRate());
         assertEquals(inverterAddress.intValue(), auroraMonitor.getInverterAddress());
@@ -166,7 +179,7 @@ public class TestCoreMonitorWebCommands {
         System.out.println(jsonResult);
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
-        float energyReadout = Float.parseFloat((String) result.data.value);
+        float energyReadout = Float.parseFloat((String) result.data);
 
         assertEquals(expectedCumulateEnergyValue, energyReadout, 0.00001);
 
@@ -199,7 +212,7 @@ public class TestCoreMonitorWebCommands {
         System.out.println(jsonResult);
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
-        float voltageReadout = Float.parseFloat((String) result.data.value);
+        float voltageReadout = Float.parseFloat((String) result.data);
 
         assertEquals(expectedVoltageAll, voltageReadout, 0.00001);
 
@@ -233,7 +246,7 @@ public class TestCoreMonitorWebCommands {
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
-        assertEquals(productNumber, result.data.value);
+        assertEquals(productNumber, result.data);
 
 
     }
@@ -265,7 +278,7 @@ public class TestCoreMonitorWebCommands {
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
-        assertEquals(serialNumber, result.data.value);
+        assertEquals(serialNumber, result.data);
 
     }
 
@@ -297,7 +310,7 @@ public class TestCoreMonitorWebCommands {
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
-        assertEquals(versionDescription, result.data.value);
+        assertEquals(versionDescription, result.data);
 
     }
 
@@ -326,7 +339,7 @@ public class TestCoreMonitorWebCommands {
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
-        assertEquals(firmareVersion, result.data.value);
+        assertEquals(firmareVersion, result.data);
 
     }
 
@@ -355,7 +368,7 @@ public class TestCoreMonitorWebCommands {
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
-        assertEquals(maufactoringDate, result.data.value);
+        assertEquals(maufactoringDate, result.data);
 
     }
 
@@ -384,7 +397,7 @@ public class TestCoreMonitorWebCommands {
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
-        assertEquals(systemConfig, Integer.parseInt((String) result.data.value));
+        assertEquals(systemConfig, Integer.parseInt((String) result.data));
 
     }
 
@@ -413,7 +426,7 @@ public class TestCoreMonitorWebCommands {
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
-        assertEquals(timeCounter, result.data.value);
+        assertEquals(timeCounter, result.data);
 
     }
 
@@ -442,7 +455,7 @@ public class TestCoreMonitorWebCommands {
 
         EBResponseOK result = new Gson().fromJson(jsonResult, EBResponseOK.class);
 
-        assertEquals(timeCounter, result.data.value);
+        assertEquals(timeCounter, result.data);
 
     }
 

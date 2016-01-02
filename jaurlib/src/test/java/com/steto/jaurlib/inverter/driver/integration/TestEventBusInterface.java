@@ -82,7 +82,7 @@ public class TestEventBusInterface {
         EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
         System.out.println(result);
 
-        float energyReadout = Float.parseFloat((String) result.data.value);
+        float energyReadout = Float.parseFloat((String) result.data);
 
         assertEquals(expectedCumulateEnergyValue, energyReadout, 0.00001);
 
@@ -114,7 +114,7 @@ public class TestEventBusInterface {
         EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
         System.out.println(result);
 
-        float voltageReadout = Float.parseFloat((String) result.data.value);
+        float voltageReadout = Float.parseFloat((String) result.data);
 
         assertEquals(expectedVoltageAll, voltageReadout, 0.00001);
 
@@ -148,7 +148,7 @@ public class TestEventBusInterface {
         System.out.println(result);
 
 
-        assertEquals(productNumber, result.data.value);
+        assertEquals(productNumber, result.data);
 
 
     }
@@ -178,7 +178,7 @@ public class TestEventBusInterface {
         System.out.println(result);
 
 
-        assertEquals(serialNumber, result.data.value);
+        assertEquals(serialNumber, result.data);
 
     }
 
@@ -208,7 +208,7 @@ public class TestEventBusInterface {
         System.out.println(result);
 
 
-        assertEquals(versionDescription, result.data.value);
+        assertEquals(versionDescription, result.data);
 
     }
 
@@ -234,7 +234,7 @@ public class TestEventBusInterface {
         EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
         System.out.println(result);
 
-        assertEquals(firmareVersion, result.data.value);
+        assertEquals(firmareVersion, result.data);
 
     }
 
@@ -260,7 +260,7 @@ public class TestEventBusInterface {
         EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
         System.out.println(result);
 
-        assertEquals(maufactoringDate, result.data.value);
+        assertEquals(maufactoringDate, result.data);
 
     }
 
@@ -288,7 +288,7 @@ public class TestEventBusInterface {
         EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
         System.out.println(result);
 
-        assertEquals(systemConfig, result.data.value);
+        assertEquals(systemConfig, result.data);
 
     }
 
@@ -315,7 +315,7 @@ public class TestEventBusInterface {
         EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
         System.out.println(result);
 
-        assertEquals(timeCounter, result.data.value);
+        assertEquals(timeCounter, result.data);
 
     }
 
@@ -342,7 +342,7 @@ public class TestEventBusInterface {
         EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
         System.out.println(result);
 
-        assertEquals(timeCounter, result.data.value);
+        assertEquals(timeCounter, result.data);
 
     }
 
