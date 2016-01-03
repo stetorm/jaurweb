@@ -20,6 +20,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +36,9 @@ import static org.mockito.Mockito.when;
  */
 public class TestCoreMonitorWebCommands {
 
-    String configFile = "resources/aurora.cfg";
+    File resourcesDirectory = new File("src/test/resources/aurora.cfg");
+
+    String configFile = resourcesDirectory.getAbsolutePath();
     AuroraMonitor auroraMonitor = null;
     AuroraWebServer auroraWebServer = null;
     int auroraServicePort = 8085;
