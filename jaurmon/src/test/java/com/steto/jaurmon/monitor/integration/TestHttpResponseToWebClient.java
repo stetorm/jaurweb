@@ -77,7 +77,7 @@ public class TestHttpResponseToWebClient {
     public void shouldLoadPvOutputParams() throws Exception {
 
         FakeAuroraWebClient fakeAuroraWebClient = new FakeAuroraWebClient("http://localhost:" + auroraServicePort);
-        String jsonResult = fakeAuroraWebClient.sendLoadConfigRequest();
+        String jsonResult = fakeAuroraWebClient.sendLoadInvSettingsRequest();
         Gson gson = new Gson();
         Map result = gson.fromJson(jsonResult, Map.class);
         assertEquals(auroraMonitorOld.getPvOutputApiKey(), result.get("pvOutputApiKey"));

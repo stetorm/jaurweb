@@ -34,14 +34,14 @@ class InverterCmdHandler extends AbstractHandler {
 
         EventBusRequest result = null;
         switch (cmdUrl) {
-            case "saveSettings":
+            case "saveInvSettings":
                 result = new MonReqSaveInvSettings(cmdParams);
                 break;
             case "saveCfg":
                 result = new MonCmdSavePvOutputConfig(cmdParams);
                 break;
-            case "loadCfg":
-                result = new MonCmdLoadConfig();
+            case "loadInvSettings":
+                result = new MonReqLoadInvSettings(cmdParams);
                 break;
             case "status":
                 result = new MonCmdReadStatus();

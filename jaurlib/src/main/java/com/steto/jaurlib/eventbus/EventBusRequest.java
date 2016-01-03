@@ -15,7 +15,7 @@ public abstract class EventBusRequest {
     public EBResponse response=null;
     public String jsonParams;
 
-    protected EventBusRequest(Map<String, String> params) {
+    public EventBusRequest(Map<String, String> params) {
         this.paramsMap = params;
         jsonParams = new Gson().toJson(params);
 

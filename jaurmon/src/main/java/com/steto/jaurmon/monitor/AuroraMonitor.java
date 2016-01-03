@@ -329,6 +329,27 @@ public class AuroraMonitor {
 
     @Subscribe
     @AllowConcurrentEvents
+    public void handle(MonReqLoadInvSettings cmd) {
+
+        EBResponse ebResponse=null;
+
+        try {
+
+
+            ebResponse =  new EBResponseOK(hwSettings) ;
+
+
+        } catch (Exception e) {
+            String errorString = "Could not execute Request: "+cmd.getClass().getCanonicalName()+", "+e.getMessage();
+            ebResponse = new EBResponseNOK(-1, errorString);
+        }
+
+        cmd.response = ebResponse;
+
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
     public void execCommand(MonCmdReadStatus cmd) {
         try {
             Map<String, String> mapResult = new HashMap<>();

@@ -25,8 +25,8 @@ public class FakeAuroraWebClient {
         this.serverAddress = serverAddress;
     }
 
-    public String sendLoadConfigRequest() throws IOException {
-        String requestUrl = serverAddress + "/cmd/loadCfg";
+    public String sendLoadInvSettingsRequest() throws IOException {
+        String requestUrl = serverAddress + "/cmd/loadInvSettings";
         String result = "";
 
         try {
@@ -61,7 +61,7 @@ public class FakeAuroraWebClient {
     }
 
     public String sendSaveSettingsRequest(Map mapConfig) {
-        String requestUrl = serverAddress + "/cmd/saveSettings/?" + HttpUtils.urlEncodeUTF8(mapConfig);
+        String requestUrl = serverAddress + "/cmd/saveInvSettings/?" + HttpUtils.urlEncodeUTF8(mapConfig);
         String result = "";
         try {
             HttpClient httpClient = HttpClients.createDefault();

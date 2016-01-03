@@ -4,7 +4,6 @@ import com.google.common.eventbus.EventBus;
 import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
-import com.steto.jaurlib.eventbus.EBResponse;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
 import com.steto.jaurlib.eventbus.EBResponseOK;
 import com.steto.jaurlib.eventbus.EventBusInverterAdapter;
@@ -15,15 +14,12 @@ import com.steto.jaurmon.monitor.AuroraMonitor;
 import com.steto.jaurmon.monitor.FakeAuroraWebClient;
 
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
-import jssc.SerialPort;
-import jssc.SerialPortException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +28,6 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -124,6 +119,36 @@ public class TestCoreMonitorWebCommands {
 
     }
 
+
+    @Test
+    public void shouldLoadInverterSettings() throws Exception {
+
+        String serialPort = "/TEST/COM";
+        Integer baudRate = 1122;
+        Integer inverterAddress = 5;
+
+        auroraMonitor.setInverterAddress(inverterAddress);
+        auroraMonitor.setSerialPortBaudRate(baudRate);
+        auroraMonitor.setSerialPortName(serialPort);
+
+        FakeAuroraWebClient fakeAuroraWebClient = new FakeAuroraWebClient("http://localhost:" + auroraServicePort);
+        Thread.sleep(500);
+        // exercise
+        String jsonResult = fakeAuroraWebClient.sendLoadInvSettingsRequest();
+
+
+        //verify
+        System.out.println(jsonResult);
+        EBResponseOK ebResponseOK = new Gson().fromJson(jsonResult, EBResponseOK.class);
+
+        // verify json answer, gli interi vengono considerati come float
+        Map responseMap  = new Gson().fromJson(jsonResult, Map.class);
+        Map dataMap = (Map) responseMap.get("data");
+        assertEquals(serialPort,  dataMap.get("serialPort"));
+        assertEquals(String.valueOf(baudRate.floatValue()), dataMap.get("serialPortBaudRate").toString().trim());
+        assertEquals(String.valueOf(inverterAddress.floatValue()),  dataMap.get("inverterAddress").toString().trim());
+
+    }
 
     @Test
     public void shouldReplyToBadCommand() throws Exception {
