@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 /**
  * Created by stefano on 23/12/14.
  */
-public class TestCoreMonitorWebCommands {
+public class TestCoreMonitorREST {
 
     File resourcesDirectory = new File("src/test/resources/aurora.cfg");
 
