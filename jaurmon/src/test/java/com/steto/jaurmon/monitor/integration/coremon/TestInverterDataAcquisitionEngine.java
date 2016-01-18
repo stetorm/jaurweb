@@ -25,6 +25,7 @@ import java.io.File;
 
 import static com.steto.jaurmon.monitor.RandomObjectGenerator.getA_HwSettings;
 import static com.steto.jaurmon.monitor.TestUtility.createAuroraConfigFile;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,6 +36,27 @@ import static org.mockito.Mockito.when;
 
 public class TestInverterDataAcquisitionEngine {
 
+
+    class  TelemetriesReceiver  {
+
+        private final Object waitVar;
+        public PeriodicInverterTelemetries telemetries;
+
+        public TelemetriesReceiver(Object waitVar) {
+            this.waitVar = waitVar;
+        }
+
+
+        @Subscribe
+        public void handle(PeriodicInverterTelemetries msg) {
+            telemetries = msg;
+            notify();
+            synchronized (waitVar) {
+                waitVar.notifyAll();
+            }
+        }
+
+    };
 
     File resourcesDirectory = new File("src/test/resources");
 
@@ -81,14 +103,14 @@ public class TestInverterDataAcquisitionEngine {
         float gridPowerAll = (float) 321.3;
         float gridVoltageAll = (float) 221.5;
         float inverterTemperature = (float) 27.4;
-        float cumulateEnergy = (float) 1367.9;
+        Float cumulatedEnergy = (float) 1367.0;
 
         AResp_CumulatedEnergy cumulateEnergyResponse = new AResp_CumulatedEnergy();
         AResp_DspData responseGridPowerAll = new AResp_DspData();
         AResp_DspData responseGridVoltageAll = new AResp_DspData();
         AResp_DspData respInverterTemperature = new AResp_DspData();
 
-        cumulateEnergyResponse.setFloatParam(cumulateEnergy);
+        cumulateEnergyResponse.setLongParam(cumulatedEnergy.longValue());
         responseGridPowerAll.setFloatParam(gridPowerAll);
         responseGridVoltageAll.setFloatParam(gridVoltageAll);
         respInverterTemperature.setFloatParam(inverterTemperature);
@@ -98,24 +120,8 @@ public class TestInverterDataAcquisitionEngine {
         when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.GRID_VOLTAGE_ALL))).thenReturn(responseGridVoltageAll);
         when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED))).thenReturn(respInverterTemperature);
 
-
-        Object telemetriesReceiver = new Object() {
-
-            public PeriodicInverterTelemetries telemetries;
-
-            @Subscribe
-            public void handle(PeriodicInverterTelemetries msg) {
-                telemetries = msg;
-                notify();
-                synchronized (waitVar) {
-                    waitVar.notifyAll();
-                }
-            }
-
-        };
-
+        TelemetriesReceiver telemetriesReceiver = new TelemetriesReceiver(waitVar);
         theEventBus.register(telemetriesReceiver);
-
 
         auroraMonitor.start();
 
@@ -123,6 +129,11 @@ public class TestInverterDataAcquisitionEngine {
             waitVar.wait(2000);
         }
 
+
+        assertEquals(gridPowerAll,telemetriesReceiver.telemetries.gridPowerAll,0.0001);
+        assertEquals(gridVoltageAll,telemetriesReceiver.telemetries.gridVoltageAll,0.0001);
+        assertEquals(inverterTemperature,telemetriesReceiver.telemetries.inverterTemp,0.0001);
+        assertEquals(cumulatedEnergy,telemetriesReceiver.telemetries.cumulatedEnergy,0.0001);
 
 
 

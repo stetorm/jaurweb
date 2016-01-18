@@ -27,6 +27,7 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
@@ -298,6 +299,62 @@ public class AuroraMonitor {
     }
 
 
+    public boolean acquireDataToBePublished(PeriodicInverterTelemetries periodicInverterTelemetries) {
+
+        boolean result = true;
+        AuroraResponse response = null;
+        try {
+            log.info("Starting data acquisition from inverter");
+            response = auroraDriver.acquireCumulatedEnergy(hwSettings.inverterAddress, AuroraCumEnergyEnum.DAILY);
+            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            periodicInverterTelemetries.cumulatedEnergy = response.getLongParam();
+
+            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_POWER_ALL);
+            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            periodicInverterTelemetries.gridPowerAll =  response.getFloatParam();
+
+            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
+            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            periodicInverterTelemetries.gridVoltageAll = response.getFloatParam();
+
+            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
+            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            periodicInverterTelemetries.inverterTemp = response.getFloatParam();
+
+            log.info("data acquisition from inverter completed");
+        } catch (Exception e) {
+            result = false;
+            String errMsg = "Data acquisition failed: " + e.getMessage();
+            if (response != null) {
+                errMsg += ", Error Code: " + response.getErrorCode();
+            }
+            log.severe(errMsg);
+        }
+
+        return result;
+
+    }
+
+
+    public void start() {
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                PeriodicInverterTelemetries telemetries = new PeriodicInverterTelemetries();
+                acquireDataToBePublished(telemetries);
+                theEventBus.post(telemetries);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }).start();
+
+    }
+
     @Subscribe
     @AllowConcurrentEvents
     public void handle(MonReqSaveInvSettings cmd) {
@@ -398,6 +455,7 @@ public class AuroraMonitor {
             AuroraMonitor auroraMonitor = new AuroraMonitor(theEventBus,auroraDriver, configurationFileName, logDirectoryPath);
             EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus,auroraDriver, new InverterCommandFactory());
             auroraMonitor.init();
+            auroraMonitor.start();
 
             log.info("Creating Web Server...");
             AuroraWebServer auroraWebServer = new AuroraWebServer(8080, webDirectoryPath, theEventBus);
@@ -411,9 +469,6 @@ public class AuroraMonitor {
 
     }
 
-    public void start() {
-
-    }
 }
 
 
