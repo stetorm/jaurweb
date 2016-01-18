@@ -20,6 +20,17 @@ public class RandomObjectGenerator {
         return pvOutputRecord;
     }
 
+    public static HwSettings getA_HwSettings() {
+        HwSettings hwSettings = new HwSettings();
+        hwSettings.inverterAddress = getInt(32);
+        hwSettings.serialPortBaudRate = getInt(105000);
+        hwSettings.serialPort = getString("/dev/myserialPort");
+        return hwSettings;
+    }
+
+
+
+
     public static int getInt(int maxNum) {
         Random random = new Random();
         float f = random.nextFloat();
@@ -54,6 +65,10 @@ public class RandomObjectGenerator {
     public static boolean getRandomBoolean() {
         Random random = new Random();
         return random.nextBoolean();
+    }
+
+    public static String getString(String baseString) {
+        return baseString + getInt(100000);
     }
 
 }
