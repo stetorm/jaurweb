@@ -5,20 +5,20 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
-import com.steto.jaurlib.cmd.InverterCommand;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
-import com.steto.jaurlib.eventbus.EBResponse;
-import com.steto.jaurlib.eventbus.EBResponseNOK;
-import com.steto.jaurlib.eventbus.EBResponseOK;
-import com.steto.jaurlib.eventbus.EventBusInverterAdapter;
+import com.steto.jaurlib.eventbus.*;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
 import com.steto.jaurlib.request.AuroraRequestFactory;
-import com.steto.jaurlib.response.*;
-import com.steto.jaurmon.monitor.cmd.*;
+import com.steto.jaurlib.response.AResp_VersionId;
+import com.steto.jaurlib.response.AuroraResponse;
+import com.steto.jaurlib.response.AuroraResponseFactory;
+import com.steto.jaurlib.response.ResponseErrorEnum;
+import com.steto.jaurmon.monitor.cmd.MonCmdReadStatus;
+import com.steto.jaurmon.monitor.cmd.MonReqLoadInvSettings;
+import com.steto.jaurmon.monitor.cmd.MonReqSaveInvSettings;
 import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
-import jssc.SerialPort;
 import jssc.SerialPortException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
@@ -26,8 +26,9 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.RunnableFuture;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
@@ -106,7 +107,7 @@ public class AuroraMonitor {
 
     protected void initInverterDriver(String serialPortName, int serialPortBaudRate) throws SerialPortException {
 
-        auroraDriver.setSerialPort(serialPortName,serialPortBaudRate);
+        auroraDriver.setSerialPort(serialPortName, serialPortBaudRate);
         log.info("Serial Port initialized with values: " + serialPortName + ", " + serialPortBaudRate);
     }
 
@@ -186,7 +187,7 @@ public class AuroraMonitor {
         } catch (Exception e) {
             String errMsg = "Error reading file: " + configurationFileName + ", " + e.getMessage();
 //            log.severe("Error reading file: " + configurationFileName + ", " + e.getMessage());
-            throw  new Exception(errMsg);
+            throw new Exception(errMsg);
         }
 
         return result;
@@ -194,7 +195,6 @@ public class AuroraMonitor {
 
 
     public void saveHwSettingsConfiguration() throws IOException, ConfigurationException {
-
 
 
         HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
@@ -206,9 +206,6 @@ public class AuroraMonitor {
 
 
     }
-
-
-
 
 
     private Map<String, Object> getSettingsMap() {
@@ -235,7 +232,7 @@ public class AuroraMonitor {
         result = result == null ? badResult : result;
 
         log.fine("Check Status Result: " + result.getErrorCode());
-        updateInverterStatus(result.getErrorCode() );
+        updateInverterStatus(result.getErrorCode());
 
 
     }
@@ -299,7 +296,7 @@ public class AuroraMonitor {
     }
 
 
-    public boolean acquireDataToBePublished(PeriodicInverterTelemetries periodicInverterTelemetries) {
+    public boolean acquireDataToBePublishedOld(PeriodicInverterTelemetries periodicInverterTelemetries) {
 
         boolean result = true;
         AuroraResponse response = null;
@@ -311,7 +308,7 @@ public class AuroraMonitor {
 
             response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_POWER_ALL);
             result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            periodicInverterTelemetries.gridPowerAll =  response.getFloatParam();
+            periodicInverterTelemetries.gridPowerAll = response.getFloatParam();
 
             response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
             result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
@@ -328,6 +325,43 @@ public class AuroraMonitor {
             if (response != null) {
                 errMsg += ", Error Code: " + response.getErrorCode();
             }
+            log.severe(errMsg);
+        }
+
+        return result;
+
+    }
+
+
+    public float acquireInverterMeasure(String cmdCode, String cmdOpCode) {
+
+        float measure = 0;
+        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
+        theEventBus.post(eventBusInverterRequest);
+        EBResponseOK ebResponse = (EBResponseOK) eventBusInverterRequest.getResponse();
+        measure = Float.parseFloat((String) ebResponse.data);
+        return measure;
+
+    }
+
+    public boolean acquireDataToBePublished(PeriodicInverterTelemetries periodicInverterTelemetries) {
+
+        boolean result = true;
+        try {
+            log.info("Starting data acquisition from inverter");
+            periodicInverterTelemetries.cumulatedEnergy = acquireInverterMeasure("cumEnergy","daily");
+
+            periodicInverterTelemetries.gridPowerAll = acquireInverterMeasure("dspData","gridPowerAll");
+
+            periodicInverterTelemetries.gridVoltageAll = acquireInverterMeasure("dspData","gridVoltageAll");
+
+            periodicInverterTelemetries.inverterTemp = acquireInverterMeasure("dspData","inverterTemp");
+
+
+            log.info("data acquisition from inverter completed");
+        } catch (Exception e) {
+            result = false;
+            String errMsg = "Data acquisition failed: " + e.getMessage();
             log.severe(errMsg);
         }
 
@@ -359,11 +393,11 @@ public class AuroraMonitor {
     @AllowConcurrentEvents
     public void handle(MonReqSaveInvSettings cmd) {
 
-        EBResponse ebResponse=null;
+        EBResponse ebResponse = null;
 
         try {
 
-            HwSettings newSettings =  new Gson().fromJson(cmd.jsonParams, HwSettings.class);
+            HwSettings newSettings = new Gson().fromJson(cmd.jsonParams, HwSettings.class);
 
             setSerialPortBaudRate(newSettings.serialPortBaudRate);
             setSerialPortName(newSettings.serialPort);
@@ -371,12 +405,12 @@ public class AuroraMonitor {
             init();
             saveHwSettingsConfiguration();
 
-            String payload =  new Gson().toJson(hwSettings,HwSettings.class);
-            ebResponse =  new EBResponseOK(hwSettings) ;
+            String payload = new Gson().toJson(hwSettings, HwSettings.class);
+            ebResponse = new EBResponseOK(hwSettings);
 
 
         } catch (Exception e) {
-            String errorString = "Could not execute Request: "+cmd.getClass().getCanonicalName()+", "+e.getMessage();
+            String errorString = "Could not execute Request: " + cmd.getClass().getCanonicalName() + ", " + e.getMessage();
             ebResponse = new EBResponseNOK(-1, errorString);
         }
 
@@ -388,16 +422,16 @@ public class AuroraMonitor {
     @AllowConcurrentEvents
     public void handle(MonReqLoadInvSettings cmd) {
 
-        EBResponse ebResponse=null;
+        EBResponse ebResponse = null;
 
         try {
 
 
-            ebResponse =  new EBResponseOK(hwSettings) ;
+            ebResponse = new EBResponseOK(hwSettings);
 
 
         } catch (Exception e) {
-            String errorString = "Could not execute Request: "+cmd.getClass().getCanonicalName()+", "+e.getMessage();
+            String errorString = "Could not execute Request: " + cmd.getClass().getCanonicalName() + ", " + e.getMessage();
             ebResponse = new EBResponseNOK(-1, errorString);
         }
 
@@ -437,8 +471,8 @@ public class AuroraMonitor {
             webDirectory = args[1];
         }
 
-        configurationFileName =  workingDirectory + File.separator + "config" + File.separator + configurationFileName;
-        logDirectoryPath =  workingDirectory + File.separator + logDirectoryPath;
+        configurationFileName = workingDirectory + File.separator + "config" + File.separator + configurationFileName;
+        logDirectoryPath = workingDirectory + File.separator + logDirectoryPath;
 
 
         try {
@@ -452,8 +486,8 @@ public class AuroraMonitor {
 
             log.info("Creating Aurora Monitor...");
             EventBus theEventBus = new EventBus();
-            AuroraMonitor auroraMonitor = new AuroraMonitor(theEventBus,auroraDriver, configurationFileName, logDirectoryPath);
-            EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus,auroraDriver, new InverterCommandFactory());
+            AuroraMonitor auroraMonitor = new AuroraMonitor(theEventBus, auroraDriver, configurationFileName, logDirectoryPath);
+            EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus, auroraDriver, new InverterCommandFactory());
             auroraMonitor.init();
             auroraMonitor.start();
 

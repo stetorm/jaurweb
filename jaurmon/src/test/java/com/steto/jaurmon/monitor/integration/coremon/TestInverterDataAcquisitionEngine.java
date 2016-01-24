@@ -123,6 +123,7 @@ public class TestInverterDataAcquisitionEngine {
         TelemetriesReceiver telemetriesReceiver = new TelemetriesReceiver(waitVar);
         theEventBus.register(telemetriesReceiver);
 
+        // Exercise
         auroraMonitor.start();
 
         synchronized (waitVar) {
@@ -130,6 +131,7 @@ public class TestInverterDataAcquisitionEngine {
         }
 
 
+        // Verify
         assertEquals(gridPowerAll,telemetriesReceiver.telemetries.gridPowerAll,0.0001);
         assertEquals(gridVoltageAll,telemetriesReceiver.telemetries.gridVoltageAll,0.0001);
         assertEquals(inverterTemperature,telemetriesReceiver.telemetries.inverterTemp,0.0001);
