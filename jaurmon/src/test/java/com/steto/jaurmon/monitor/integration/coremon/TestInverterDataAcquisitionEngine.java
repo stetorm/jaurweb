@@ -50,7 +50,6 @@ public class TestInverterDataAcquisitionEngine {
         @Subscribe
         public void handle(PeriodicInverterTelemetries msg) {
             telemetries = msg;
-            notify();
             synchronized (waitVar) {
                 waitVar.notifyAll();
             }

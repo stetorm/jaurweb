@@ -1,5 +1,7 @@
 package com.steto.jaurlib.eventbus;
 
+import java.util.Map;
+
 /**
  * Created by stefano on 28/12/15.
  */
@@ -15,7 +17,12 @@ public class EventBusInverterRequest extends EventBusRequest{
 
     }
 
+    public EventBusInverterRequest(Map cmdParams) {
+        this.opcode = (String) cmdParams.get("opcode");
+        this.subcode = (String) cmdParams.get("subcode");
+        this.address = Integer.parseInt((String) cmdParams.get("address"));
 
+    }
 
 
     public String opcode() {

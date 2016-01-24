@@ -78,10 +78,23 @@ public class TestCoreMonitorREST {
     public void shouldSendStatus() throws Exception {
 
         FakeAuroraWebClient fakeAuroraWebClient = new FakeAuroraWebClient("http://localhost:" + auroraServicePort);
+
+        // Exercise
         String jsonResult = fakeAuroraWebClient.sendStatusRequest();
+
+
+        // Verify
+        System.out.println(jsonResult);
+        EBResponseOK ebResponseOK = new Gson().fromJson(jsonResult, EBResponseOK.class);
+
+
+        String invStatus  = (String) ebResponseOK.data;
+
+
         Gson gson = new Gson();
         Map result = gson.fromJson(jsonResult, Map.class);
-        assertEquals(auroraMonitor.isInverterOnline() ? "online" : "offline", result.get("inverterStatus"));
+        assertEquals(auroraMonitor.isInverterOnline() ? "online" : "offline", invStatus);
+
 
     }
 

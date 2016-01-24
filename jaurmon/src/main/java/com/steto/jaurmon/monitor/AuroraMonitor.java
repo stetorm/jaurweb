@@ -349,13 +349,13 @@ public class AuroraMonitor {
         boolean result = true;
         try {
             log.info("Starting data acquisition from inverter");
-            periodicInverterTelemetries.cumulatedEnergy = acquireInverterMeasure("cumEnergy","daily");
+            periodicInverterTelemetries.cumulatedEnergy = acquireInverterMeasure("cumEnergy", "daily");
 
-            periodicInverterTelemetries.gridPowerAll = acquireInverterMeasure("dspData","gridPowerAll");
+            periodicInverterTelemetries.gridPowerAll = acquireInverterMeasure("dspData", "gridPowerAll");
 
-            periodicInverterTelemetries.gridVoltageAll = acquireInverterMeasure("dspData","gridVoltageAll");
+            periodicInverterTelemetries.gridVoltageAll = acquireInverterMeasure("dspData", "gridVoltageAll");
 
-            periodicInverterTelemetries.inverterTemp = acquireInverterMeasure("dspData","inverterTemp");
+            periodicInverterTelemetries.inverterTemp = acquireInverterMeasure("dspData", "inverterTemp");
 
 
             log.info("data acquisition from inverter completed");
@@ -442,21 +442,19 @@ public class AuroraMonitor {
     @Subscribe
     @AllowConcurrentEvents
     public void execCommand(MonCmdReadStatus cmd) {
+        EBResponse ebResponse = null;
+
         try {
-            Map<String, String> mapResult = new HashMap<>();
-            boolean isPvOutRunning = getPvOutputRunningStatus();
-            String pvStatus = getPvOutputRunningStatus() ? "on" : "off";
-            if (!isPvOutRunning) {
-                checkInverterStatus();
-            }
+            checkInverterStatus();
             String inverterStatus = isInverterOnline() ? "online" : "offline";
-            mapResult.put("pvOutputStatus", pvStatus);
-            mapResult.put("inverterStatus", inverterStatus);
+            ebResponse = new EBResponseOK(inverterStatus);
 
         } catch (Exception ex) {
             cmd.response = new EBResponseNOK(-1, ex.getMessage());
 
         }
+        cmd.response = ebResponse;
+
     }
 
     public static void main(String[] args) throws Exception {

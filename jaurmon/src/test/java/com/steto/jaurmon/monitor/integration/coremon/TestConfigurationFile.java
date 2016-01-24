@@ -2,6 +2,7 @@ package com.steto.jaurmon.monitor.integration.coremon;
 
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurmon.monitor.AuroraMonitorTestImpl;
+import com.steto.jaurmon.monitor.HwSettings;
 import jssc.SerialPortException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.After;
@@ -14,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import static com.steto.jaurmon.monitor.TestUtility.createAuroraConfigFile;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -46,19 +48,21 @@ public class TestConfigurationFile {
     public void shouldLoadAndSaveConfigurationFile() throws Exception {
         File temp = new File(configFileDirPath+"/aurora.cfg");
         String fileName = temp.getAbsolutePath();
-        copyFile(new File("resources/aurora.cfg"),temp);
 
-        AuroraMonitorTestImpl auroraMonitorSave = new AuroraMonitorTestImpl(mock(AuroraDriver.class),fileName, configFileDirPath);
-
-        // PvOutput params
-        String key="abcdefgh01234";
-        String url="http://unsito/service";
-        int systemId=12345;
-        int period=15;
-        // Settings
         String serialPort="/dev/usb0";
         int inverterAddress=21;
         int baudRate=9600;
+
+        HwSettings hwSettings = new HwSettings();
+        hwSettings.serialPort = serialPort;
+        hwSettings.inverterAddress = inverterAddress;
+        hwSettings.serialPortBaudRate = baudRate;
+
+        createAuroraConfigFile(fileName,hwSettings);
+
+
+        AuroraMonitorTestImpl auroraMonitorSave = new AuroraMonitorTestImpl(mock(AuroraDriver.class),fileName, configFileDirPath);
+
 
 
         auroraMonitorSave.setInverterAddress(inverterAddress);

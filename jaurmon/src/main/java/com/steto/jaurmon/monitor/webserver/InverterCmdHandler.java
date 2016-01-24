@@ -46,12 +46,8 @@ class InverterCmdHandler extends AbstractHandler {
             case "status":
                 result = new MonCmdReadStatus();
                 break;
-
             case "inv":
-                String opCodeParameter = (String) cmdParams.get("opcode");
-                String subCodeParameter = (String) cmdParams.get("subcode");
-                int addressParameter = Integer.parseInt((String) cmdParams.get("address"));
-                result = new EventBusInverterRequest(opCodeParameter,subCodeParameter,addressParameter);
+                result = new EventBusInverterRequest(cmdParams);
                 break;
 
             case "pvOutputTest":
