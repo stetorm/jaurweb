@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor;
+package com.steto.jaurmon.monitor.pvoutput;
 
 import com.steto.jaurmon.utils.MyUtils;
 

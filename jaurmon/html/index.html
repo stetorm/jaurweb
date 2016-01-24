@@ -223,8 +223,10 @@
                     <div class="col-md-4">
                         <button type="button" id="btnPVoutSave" class="btn btn-default btn-lg small">Save</button>
                         <button type="button" id="btnPVoutTest" class="btn btn-default btn-lg small">Test</button>
-                        <button type="button" id="btnPVoutStop"  class="btn btn-default btn-lg small"><i class="glyphicon glyphicon-stop"></i></button>
-                        <button type="button" id="btnPVoutStart" class="btn btn-default btn-lg small"><i class="glyphicon glyphicon-play"></i></button>
+                        <button type="button" id="btnPVoutStop" class="btn btn-default btn-lg small"><i
+                                class="glyphicon glyphicon-stop"></i></button>
+                        <button type="button" id="btnPVoutStart" class="btn btn-default btn-lg small"><i
+                                class="glyphicon glyphicon-play"></i></button>
                     </div>
                 </div>
             </div>
@@ -384,7 +386,7 @@
 
         window.setInterval(sendLoadStatusCommand, 30000);
         sendLoadStatusCommand();
-        sendLoadCfgCommand();
+        sendLoadInvCfgCommand();
 
     });
 </script>
@@ -451,7 +453,15 @@
             console.log("Executed command: " + urlString + " with response: " + status);
             textOutput = $("#areaResult").text();
             if (textOutput != null) {
-                $("#areaResult").text(msg + textOutput);
+                var dispValue;
+                var jsonMsg = JSON.parse(msg);
+                if ("error" in jsonMsg) {
+                    dispValue = "ERROR: " + jsonMsg.error.message;
+                }
+                else {
+                    dispValue = jsonMsg.data;
+                }
+                $("#areaResult").text(d∂ispValue + "\n" + textOutput);
 
             }
 
@@ -497,7 +507,7 @@
 
     function sendSaveSettings() {
 
-        var urlString = '/cmd/saveSettings?';
+        var urlString = '/cmd/saveInvSettings?';
 
         var cmdMap = {};
 
@@ -571,8 +581,28 @@
 
     }
 
-    function sendLoadCfgCommand() {
-        var urlString = '/cmd/loadCfg';
+    function sendLoadInvCfgCommand() {
+        var urlString = '/cmd/loadInvSettings';
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var jsonResponse = JSON.parse(msg);
+            if ("error" in jsonResponse) {
+                   console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var data = jsonResponse.data;
+                $("#txtSerialPort").val(data["serialPort"]);
+                $("#txtBaudRate").val(data["serialPortBaudRate"]);
+                $("#txtInvAddress").val(data["inverterAddress"]);
+            }
+        });
+
+    }
+    function sendLoadPvOutputCommand() {
+        var urlString = '/cmd/loadInvSettings';
 
         console.log('urlString ' + urlString);
         $.get(urlString, function (msg, status) {
@@ -588,6 +618,7 @@
         });
 
     }
+
 </script>
 </body>
 

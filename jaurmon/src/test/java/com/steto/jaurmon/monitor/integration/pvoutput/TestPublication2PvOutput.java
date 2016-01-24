@@ -1,7 +1,8 @@
-package com.steto.jaurmon.monitor.integration;
+package com.steto.jaurmon.monitor.integration.pvoutput;
 
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurmon.monitor.*;
+import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
 import com.steto.jaurmon.utils.HttpUtils;
 import jssc.SerialPortException;
 import org.junit.After;
@@ -354,8 +355,8 @@ public class TestPublication2PvOutput {
 
         assertFalse( new File(dataStorageFileName).exists());
 
-        org.junit.Assert.assertEquals(values[0], AuroraMonitor.convertDate(pvOutputRecord1.getDate()));
-        assertEquals(values[1],  AuroraMonitor.convertDayTime(pvOutputRecord1.getDate()));
+        org.junit.Assert.assertEquals(values[0], AuroraMonitorOld.convertDate(pvOutputRecord1.getDate()));
+        assertEquals(values[1],  AuroraMonitorOld.convertDayTime(pvOutputRecord1.getDate()));
         assertEquals(Float.parseFloat(values[2]), pvOutputRecord1.dailyCumulatedEnergy, 0.0001);
         assertEquals(Float.parseFloat(values[3]), pvOutputRecord1.totalPowerGenerated, 0.0001);
         assertEquals(Float.parseFloat(values[4]), -1, 0.0001);
@@ -365,8 +366,8 @@ public class TestPublication2PvOutput {
 
         values = recordsValues[1].split(",");
 
-        assertEquals(values[0],  AuroraMonitor.convertDate(pvOutputRecord2.getDate()));
-        assertEquals(values[1],  AuroraMonitor.convertDayTime(pvOutputRecord2.getDate()));
+        assertEquals(values[0],  AuroraMonitorOld.convertDate(pvOutputRecord2.getDate()));
+        assertEquals(values[1],  AuroraMonitorOld.convertDayTime(pvOutputRecord2.getDate()));
         assertEquals(Float.parseFloat(values[2]), pvOutputRecord2.dailyCumulatedEnergy, 0.0001);
         assertEquals(Float.parseFloat(values[3]), pvOutputRecord2.totalPowerGenerated, 0.0001);
         assertEquals(Float.parseFloat(values[4]), -1, 0.0001);

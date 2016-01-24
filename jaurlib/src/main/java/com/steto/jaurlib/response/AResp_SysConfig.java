@@ -11,4 +11,10 @@ public class AResp_SysConfig  extends AuroraResponse{
     public int getConfigCode() {
         return getParam1();
     }
+
+    @Override
+    public String getValue() {
+        return String.valueOf(getConfigCode());
+    }
+
 }

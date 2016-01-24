@@ -61,9 +61,11 @@ public class HttpUtils {
         Map<String, String> map = new HashMap<String, String>();
         for (String param : params)
         {
-            String name = urlDecodeUTF8(param.split("=")[0]);
-            String value = urlDecodeUTF8(param.split("=")[1]);
-            map.put(name, value);
+            if(param.split("=").length==2) {
+                String name = urlDecodeUTF8(param.split("=")[0]);
+                String value = urlDecodeUTF8(param.split("=")[1]);
+                map.put(name, value);
+            }
         }
 
         return map;

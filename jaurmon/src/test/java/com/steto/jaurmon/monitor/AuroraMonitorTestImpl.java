@@ -1,5 +1,6 @@
 package com.steto.jaurmon.monitor;
 
+import com.google.common.eventbus.EventBus;
 import com.steto.jaurlib.AuroraDriver;
 import jssc.SerialPortException;
 
@@ -15,8 +16,8 @@ public class AuroraMonitorTestImpl extends AuroraMonitor {
 
     public String lastPvOutputDataPublished="";
 
-    public AuroraMonitorTestImpl(AuroraDriver mock, String configFile, String datalogPath) throws IOException, SerialPortException {
-        super(mock, configFile,datalogPath);
+    public AuroraMonitorTestImpl(AuroraDriver mock, String configFile, String datalogPath) throws Exception {
+        super(new EventBus(),mock, configFile,datalogPath);
     }
 
     public void setDailyCumulatedEnergy(long v) {

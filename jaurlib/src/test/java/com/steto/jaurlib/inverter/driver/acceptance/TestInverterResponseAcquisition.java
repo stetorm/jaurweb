@@ -1,4 +1,4 @@
-package com.steto.jaurmon.acceptance;
+package com.steto.jaurlib.inverter.driver.acceptance;
 
 import com.steto.jaurinv.AuroraInverter;
 import com.steto.jaurinv.AuroraVersionData;
@@ -9,10 +9,7 @@ import com.steto.jaurlib.request.AuroraRequestFactory;
 import com.steto.jaurlib.response.*;
 import jssc.SerialPort;
 import jssc.SerialPortException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.text.ParseException;
 import java.util.Calendar;
@@ -89,7 +86,7 @@ public class TestInverterResponseAcquisition {
         AResp_CumulatedEnergy response = (AResp_CumulatedEnergy) auroraDriver.acquireCumulatedEnergy(1, AuroraCumEnergyEnum.PARTIAL);
 
         // verify
-        assertEquals((long) response.get(), auroraInverter.cumulatedEnergyPartial);
+        Assert.assertEquals((long) response.get(), auroraInverter.cumulatedEnergyPartial);
 
         // exercise
         response = (AResp_CumulatedEnergy) auroraDriver.acquireCumulatedEnergy(1, AuroraCumEnergyEnum.TOTAL);
@@ -97,7 +94,7 @@ public class TestInverterResponseAcquisition {
         // verify
         expectedMsg = new AResp_CumulatedEnergy();
         expectedMsg.setType(AuroraCumEnergyEnum.TOTAL);
-        assertEquals((long) response.get(), auroraInverter.cumulatedEnergyTotal);
+        Assert.assertEquals((long) response.get(), auroraInverter.cumulatedEnergyTotal);
 
         // exercise
         response = (AResp_CumulatedEnergy) auroraDriver.acquireCumulatedEnergy(1, AuroraCumEnergyEnum.DAILY);
@@ -105,7 +102,7 @@ public class TestInverterResponseAcquisition {
         // verify
         expectedMsg = new AResp_CumulatedEnergy();
         expectedMsg.setType(AuroraCumEnergyEnum.DAILY);
-        assertEquals((long) response.get(), auroraInverter.cumulatedEnergyDaily);
+        Assert.assertEquals((long) response.get(), auroraInverter.cumulatedEnergyDaily);
 
         // exercise
         response = (AResp_CumulatedEnergy) auroraDriver.acquireCumulatedEnergy(1, AuroraCumEnergyEnum.WEEKLY);
@@ -113,7 +110,7 @@ public class TestInverterResponseAcquisition {
         // verify
         expectedMsg = new AResp_CumulatedEnergy();
         expectedMsg.setType(AuroraCumEnergyEnum.WEEKLY);
-        assertEquals((long) response.get(), auroraInverter.cumulatedEnergyWeekly);
+        Assert.assertEquals((long) response.get(), auroraInverter.cumulatedEnergyWeekly);
 
         // exercise
         response = (AResp_CumulatedEnergy) auroraDriver.acquireCumulatedEnergy(1, AuroraCumEnergyEnum.MONTHLY);
@@ -121,7 +118,7 @@ public class TestInverterResponseAcquisition {
         // verify
         expectedMsg = new AResp_CumulatedEnergy();
         expectedMsg.setType(AuroraCumEnergyEnum.MONTHLY);
-        assertEquals((long) response.get(), auroraInverter.cumulatedEnergyMonthly);
+        Assert.assertEquals((long) response.get(), auroraInverter.cumulatedEnergyMonthly);
 
         // exercise
         response = (AResp_CumulatedEnergy) auroraDriver.acquireCumulatedEnergy(1, AuroraCumEnergyEnum.YEARLY);
@@ -129,7 +126,7 @@ public class TestInverterResponseAcquisition {
         // verify
         expectedMsg = new AResp_CumulatedEnergy();
         expectedMsg.setType(AuroraCumEnergyEnum.YEARLY);
-        assertEquals((long) response.get(), auroraInverter.cumulatedEnergyYearly);
+        Assert.assertEquals((long) response.get(), auroraInverter.cumulatedEnergyYearly);
 
 
     }
@@ -206,11 +203,11 @@ public class TestInverterResponseAcquisition {
         expectedMsg.setCh2DcDcState((char) auroraInverter.channel2DcDcState);
         expectedMsg.setInverterState((char) auroraInverter.inverterState);
 
-        assertEquals(auroraInverter.alarmState, response.getAlarmState());
-        assertEquals(auroraInverter.globalState, response.getGlobalState());
-        assertEquals(auroraInverter.channel1DcDcState, response.getCh1DcDcState());
-        assertEquals(auroraInverter.channel2DcDcState, response.getCh2DcDcState());
-        assertEquals(auroraInverter.inverterState, response.getInverterState());
+        Assert.assertEquals(auroraInverter.alarmState, response.getAlarmState());
+        Assert.assertEquals(auroraInverter.globalState, response.getGlobalState());
+        Assert.assertEquals(auroraInverter.channel1DcDcState, response.getCh1DcDcState());
+        Assert.assertEquals(auroraInverter.channel2DcDcState, response.getCh2DcDcState());
+        Assert.assertEquals(auroraInverter.inverterState, response.getInverterState());
 
 
     }
@@ -224,7 +221,7 @@ public class TestInverterResponseAcquisition {
 
         // verify
 
-        assertEquals(auroraInverter.firmwareVersion, response.get().replace(".",""));
+        Assert.assertEquals(auroraInverter.firmwareVersion, response.get().replace(".", ""));
 
     }
 
@@ -255,7 +252,7 @@ public class TestInverterResponseAcquisition {
 
         // verify
 
-        assertEquals(response.getConfigCode(), auroraInverter.systemConfiguration);
+        Assert.assertEquals(response.getConfigCode(), auroraInverter.systemConfiguration);
 
     }
 
@@ -269,7 +266,7 @@ public class TestInverterResponseAcquisition {
         // verify
 
 
-        assertEquals(auroraInverter.serialNumber, response.get());
+        Assert.assertEquals(auroraInverter.serialNumber, response.get());
 
     }
 
@@ -282,7 +279,7 @@ public class TestInverterResponseAcquisition {
 
         // verify
 
-        assertEquals(response.get(), auroraInverter.productNumber);
+        Assert.assertEquals(response.get(), auroraInverter.productNumber);
 
     }
 
@@ -295,7 +292,7 @@ public class TestInverterResponseAcquisition {
 
         // verify
 
-        assertEquals(auroraInverter.timeCounter, response.get().intValue());
+        Assert.assertEquals(auroraInverter.timeCounter, response.get().intValue());
 
     }
 
@@ -310,7 +307,7 @@ public class TestInverterResponseAcquisition {
         Thread.sleep(1000);
 
         System.out.println(auroraInverter.time);
-        assertEquals(auroraInverter.time, (long) response.get());
+        Assert.assertEquals(auroraInverter.time, (long) response.get());
 
     }
 

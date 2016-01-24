@@ -1,6 +1,6 @@
 package com.steto.jaurmon.monitor.unit;
 
-import com.steto.jaurmon.monitor.AuroraMonitor;
+import com.steto.jaurmon.monitor.AuroraMonitorOld;
 import org.junit.Test;
 
 import java.text.ParseException;
@@ -18,7 +18,7 @@ public class TestGetDateTime {
     public void shouldConvertDate() throws ParseException {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy-HH:mm");
         Date d = sdf.parse("01/01/2000-23:15");
-        String date = AuroraMonitor.convertDate(d) ;
+        String date = AuroraMonitorOld.convertDate(d) ;
 
         assertEquals("20000101",date);
 
@@ -28,7 +28,7 @@ public class TestGetDateTime {
     public void shouldConvertTimeOfDay() throws ParseException {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy-HH:mm");
         Date d = sdf.parse("19/12/2014-23:15");
-        String time = AuroraMonitor.convertDayTime(d) ;
+        String time = AuroraMonitorOld.convertDayTime(d) ;
 
         assertEquals("23:15",time);
 

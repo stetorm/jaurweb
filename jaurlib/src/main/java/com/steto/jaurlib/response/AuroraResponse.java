@@ -13,11 +13,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class AuroraResponse extends MB_PDU {
+public abstract class AuroraResponse extends MB_PDU {
 
 
     protected String description = "";
     protected ResponseErrorEnum errorCode = ResponseErrorEnum.NONE;
+
+    public abstract String getValue() ;
 
 
     class _Data extends MB_data {

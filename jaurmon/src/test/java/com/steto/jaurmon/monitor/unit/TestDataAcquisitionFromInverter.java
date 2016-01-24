@@ -1,5 +1,6 @@
 package com.steto.jaurmon.monitor.unit;
 
+import com.google.common.eventbus.EventBus;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
@@ -77,7 +78,7 @@ public class TestDataAcquisitionFromInverter {
                 .doReturn(aRespVersionIdTimeout)
                 .when(auroraDriver).acquireVersionId(anyInt());
 
-        auroraMonitor = new AuroraMonitor(auroraDriver, " afilename",pvOutDirPath);
+        auroraMonitor = new AuroraMonitor(mock(EventBus.class),auroraDriver, " afilename",pvOutDirPath);
 
     }
 
@@ -95,7 +96,7 @@ public class TestDataAcquisitionFromInverter {
 
         auroraMonitor.acquireDataToBePublished();
 
-        assertEquals(cumulatedEnergy, auroraMonitor.getCumulatedEnergyReadout());
+        assertEquals(cumulatedEnergy, auroraMonitor.getCumulatedEnergyReadout(),0001);
         assertEquals(powerAll, auroraMonitor.getInstantPowerReadout(), 0.0001);
         assertEquals(voltageAll, auroraMonitor.getVoltageReadout(), 0.0001);
         assertEquals(temperature,auroraMonitor.getTemperatureReadout(), 0.0001);

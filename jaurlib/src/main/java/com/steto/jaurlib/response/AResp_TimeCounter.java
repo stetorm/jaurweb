@@ -24,7 +24,11 @@ public class AResp_TimeCounter extends AuroraResponse {
 
     @Override
     public String toString() {
-        return description.isEmpty() ? super.toString() : description + ": "+TimeUnit.MILLISECONDS.toDays(get() * 1000);
+        return description.isEmpty() ? super.toString() : description + ": "+String.valueOf(TimeUnit.MILLISECONDS.toDays(get() * 1000));
     }
 
+    @Override
+    public String getValue() {
+        return String.valueOf(get());
+    }
 }

@@ -4,7 +4,7 @@ import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.response.AuroraResponse;
 import com.steto.jaurlib.response.ResponseErrorEnum;
 import com.steto.jaurmon.monitor.AuroraMonitorTestImpl;
-import com.steto.jaurmon.monitor.PvOutputRecord;
+import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
 import com.steto.jaurmon.monitor.RandomObjectGenerator;
 import org.junit.After;
 import org.junit.Before;
