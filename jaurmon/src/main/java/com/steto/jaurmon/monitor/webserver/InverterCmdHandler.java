@@ -2,8 +2,9 @@ package com.steto.jaurmon.monitor.webserver;
 
 import com.google.common.eventbus.EventBus;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
-import com.steto.jaurlib.eventbus.EventBusInverterRequest;
-import com.steto.jaurlib.eventbus.EventBusRequest;
+import com.steto.jaurlib.eventbus.EBInverterRequest;
+import com.steto.jaurkit.EventBusRequest;
+
 import com.steto.jaurmon.monitor.cmd.*;
 import com.steto.jaurmon.utils.HttpUtils;
 import org.eclipse.jetty.server.Request;
@@ -47,7 +48,7 @@ class InverterCmdHandler extends AbstractHandler {
                 result = new MonCmdReadStatus();
                 break;
             case "inv":
-                result = new EventBusInverterRequest(cmdParams);
+                result = new EBInverterRequest(cmdParams);
                 break;
 
             case "pvOutputTest":

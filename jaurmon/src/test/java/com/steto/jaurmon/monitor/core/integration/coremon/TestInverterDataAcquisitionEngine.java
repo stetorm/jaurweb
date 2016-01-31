@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.integration.coremon;
+package com.steto.jaurmon.monitor.core.integration.coremon;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -9,12 +9,9 @@ import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
 import com.steto.jaurlib.response.AResp_CumulatedEnergy;
 import com.steto.jaurlib.response.AResp_DspData;
-import com.steto.jaurlib.response.AuroraResponse;
-import com.steto.jaurlib.response.ResponseErrorEnum;
 import com.steto.jaurmon.monitor.AuroraMonitor;
 import com.steto.jaurmon.monitor.HwSettings;
 import com.steto.jaurmon.monitor.PeriodicInverterTelemetries;
-import org.apache.commons.configuration.ConfigurationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -93,7 +90,7 @@ public class TestInverterDataAcquisitionEngine {
     }
 
     @Test
-    public void should() throws Exception {
+    public void shouldProvideInverterMeasure() throws Exception {
 
 
         final Object waitVar = new Object();

@@ -1,6 +1,7 @@
 package com.steto.jaurmon.monitor.cmd;
 
-import com.steto.jaurlib.eventbus.EventBusRequest;
+import com.steto.jaurkit.EventBusRequest;
+
 
 /**
  * Created by stefano on 26/12/14.

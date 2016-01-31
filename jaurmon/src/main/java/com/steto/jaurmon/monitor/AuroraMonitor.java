@@ -336,9 +336,9 @@ public class AuroraMonitor {
     public float acquireInverterMeasure(String cmdCode, String cmdOpCode) {
 
         float measure = 0;
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
-        theEventBus.post(eventBusInverterRequest);
-        EBResponseOK ebResponse = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
+        theEventBus.post(EBInverterRequest);
+        EBResponseOK ebResponse = (EBResponseOK) EBInverterRequest.getResponse();
         measure = Float.parseFloat((String) ebResponse.data);
         return measure;
 
@@ -405,7 +405,6 @@ public class AuroraMonitor {
             init();
             saveHwSettingsConfiguration();
 
-            String payload = new Gson().toJson(hwSettings, HwSettings.class);
             ebResponse = new EBResponseOK(hwSettings);
 
 

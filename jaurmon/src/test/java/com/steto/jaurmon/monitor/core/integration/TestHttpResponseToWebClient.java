@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.integration;
+package com.steto.jaurmon.monitor.core.integration;
 
 import com.google.common.eventbus.EventBus;
 import com.google.gson.Gson;

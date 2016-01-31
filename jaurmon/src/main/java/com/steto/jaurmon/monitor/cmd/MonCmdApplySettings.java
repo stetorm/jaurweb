@@ -1,6 +1,6 @@
 package com.steto.jaurmon.monitor.cmd;
 
-import com.steto.jaurlib.eventbus.EventBusRequest;
+import com.steto.jaurkit.EventBusRequest;
 
 import java.util.Map;
 

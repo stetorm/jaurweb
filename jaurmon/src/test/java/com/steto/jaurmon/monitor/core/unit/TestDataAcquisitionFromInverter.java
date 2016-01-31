@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.unit;
+package com.steto.jaurmon.monitor.core.unit;
 
 import com.google.common.eventbus.EventBus;
 import com.steto.jaurlib.AuroraDriver;

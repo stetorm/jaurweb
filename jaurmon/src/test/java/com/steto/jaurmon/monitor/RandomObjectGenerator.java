@@ -1,5 +1,6 @@
 package com.steto.jaurmon.monitor;
 
+import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
 import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
 
 import java.util.Date;
@@ -28,6 +29,14 @@ public class RandomObjectGenerator {
         return hwSettings;
     }
 
+    public static PVOutputParams getA_PvOutputParams() {
+        PVOutputParams pvOutParams = new PVOutputParams();
+        pvOutParams.systemId = getInt(32);
+        pvOutParams.period= getInt(100);
+        pvOutParams.apiKey = getString("api");
+        pvOutParams.url = getString("http://url?");
+        return pvOutParams;
+    }
 
 
 

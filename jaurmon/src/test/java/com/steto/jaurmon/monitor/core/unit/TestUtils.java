@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.unit;
+package com.steto.jaurmon.monitor.core.unit;
 
 import com.steto.jaurmon.utils.FormatStringUtils;
 import com.steto.jaurmon.utils.MyUtils;

@@ -1,10 +1,8 @@
-package com.steto.jaurmon.monitor.integration.coremon;
+package com.steto.jaurmon.monitor.core.integration.coremon;
 
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurmon.monitor.AuroraMonitorTestImpl;
 import com.steto.jaurmon.monitor.HwSettings;
-import jssc.SerialPortException;
-import org.apache.commons.configuration.ConfigurationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

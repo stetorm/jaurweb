@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.integration.coremon;
+package com.steto.jaurmon.monitor.core.integration.coremon;
 
 import com.google.common.eventbus.EventBus;
 import com.google.gson.Gson;
@@ -12,7 +12,6 @@ import com.steto.jaurlib.request.AuroraDspRequestEnum;
 import com.steto.jaurlib.response.*;
 import com.steto.jaurmon.monitor.AuroraMonitor;
 import com.steto.jaurmon.monitor.FakeAuroraWebClient;
-
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
 import org.junit.After;
 import org.junit.Before;
@@ -34,7 +33,7 @@ import static org.mockito.Mockito.when;
 /**
  * Created by stefano on 23/12/14.
  */
-public class TestCoreMonitorREST {
+public class TestInverterREST {
 
     File resourcesDirectory = new File("src/test/resources/aurora.cfg");
 
@@ -74,29 +73,6 @@ public class TestCoreMonitorREST {
     }
 
 
-    @Test
-    public void shouldSendStatus() throws Exception {
-
-        FakeAuroraWebClient fakeAuroraWebClient = new FakeAuroraWebClient("http://localhost:" + auroraServicePort);
-
-        // Exercise
-        String jsonResult = fakeAuroraWebClient.sendStatusRequest();
-
-
-        // Verify
-        System.out.println(jsonResult);
-        EBResponseOK ebResponseOK = new Gson().fromJson(jsonResult, EBResponseOK.class);
-
-
-        String invStatus  = (String) ebResponseOK.data;
-
-
-        Gson gson = new Gson();
-        Map result = gson.fromJson(jsonResult, Map.class);
-        assertEquals(auroraMonitor.isInverterOnline() ? "online" : "offline", invStatus);
-
-
-    }
 
 
     @Test

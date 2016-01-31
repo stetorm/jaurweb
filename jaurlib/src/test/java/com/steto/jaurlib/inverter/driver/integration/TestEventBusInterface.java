@@ -6,7 +6,7 @@ import com.steto.jaurlib.cmd.InverterCommandFactory;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
 import com.steto.jaurlib.eventbus.EBResponseOK;
 import com.steto.jaurlib.eventbus.EventBusInverterAdapter;
-import com.steto.jaurlib.eventbus.EventBusInverterRequest;
+import com.steto.jaurlib.eventbus.EBInverterRequest;
 import com.steto.jaurlib.request.AuroraCumEnergyEnum;
 import com.steto.jaurlib.request.AuroraDspRequestEnum;
 import com.steto.jaurlib.response.*;
@@ -73,13 +73,13 @@ public class TestEventBusInterface {
         expectedCumulateEnergyResponse.setLongParam((long) expectedCumulateEnergyValue);
         when(auroraDriver.acquireCumulatedEnergy(eq(inverterAddress), eq(AuroraCumEnergyEnum.DAILY))).thenReturn(expectedCumulateEnergyResponse);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
         float energyReadout = Float.parseFloat((String) result.data);
@@ -105,13 +105,13 @@ public class TestEventBusInterface {
         expectedResponse.setFloatParam(expectedVoltageAll);
         when(auroraDriver.acquireDspValue(eq(inverterAddress), eq(AuroraDspRequestEnum.GRID_VOLTAGE_ALL))).thenReturn(expectedResponse);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
         float voltageReadout = Float.parseFloat((String) result.data);
@@ -138,13 +138,13 @@ public class TestEventBusInterface {
         expectedProductNumberResponse.set(productNumber);
         when(auroraDriver.acquireProductNumber(eq(inverterAddress))).thenReturn(expectedProductNumberResponse);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
 
@@ -168,13 +168,13 @@ public class TestEventBusInterface {
         expectedSerialNumberResponse.set(serialNumber);
         when(auroraDriver.acquireSerialNumber(eq(inverterAddress))).thenReturn(expectedSerialNumberResponse);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
 
@@ -198,13 +198,13 @@ public class TestEventBusInterface {
         String versionDescription = expectedVersionId.getValue();
         when(auroraDriver.acquireVersionId(eq(inverterAddress))).thenReturn(expectedVersionId);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
 
@@ -225,13 +225,13 @@ public class TestEventBusInterface {
         String firmareVersion = expectedFirmwareVersionResponse.get();
         when(auroraDriver.acquireFirmwareVersion(eq(inverterAddress))).thenReturn(expectedFirmwareVersionResponse);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
         assertEquals(firmareVersion, result.data);
@@ -251,13 +251,13 @@ public class TestEventBusInterface {
         String maufactoringDate = expectedResponse.getValue();
         when(auroraDriver.acquireMFGdate(eq(inverterAddress))).thenReturn(expectedResponse);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
         assertEquals(maufactoringDate, result.data);
@@ -279,13 +279,13 @@ public class TestEventBusInterface {
         String systemConfig = expectedResponse.getValue();
         when(auroraDriver.acquireSystemConfig(eq(inverterAddress))).thenReturn(expectedResponse);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
         assertEquals(systemConfig, result.data);
@@ -306,13 +306,13 @@ public class TestEventBusInterface {
         String timeCounter = expectedResponse.getValue().toString();
         when(auroraDriver.acquireTimeCounter(eq(inverterAddress))).thenReturn(expectedResponse);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
         assertEquals(timeCounter, result.data);
@@ -333,13 +333,13 @@ public class TestEventBusInterface {
         String timeCounter = expectedResponse.get().toString();
         when(auroraDriver.acquireActualTime(eq(inverterAddress))).thenReturn(expectedResponse);
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseOK result = (EBResponseOK) eventBusInverterRequest.getResponse();
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
         assertEquals(timeCounter, result.data);
@@ -355,13 +355,13 @@ public class TestEventBusInterface {
         String subcode = "wrong";
 
 
-        EventBusInverterRequest eventBusInverterRequest = new EventBusInverterRequest(opcde,subcode,inverterAddress);
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
 
         // exercise
-        theEventBus.post(eventBusInverterRequest);
+        theEventBus.post(EBInverterRequest);
 
         //verify
-        EBResponseNOK result = (EBResponseNOK) eventBusInverterRequest.getResponse();
+        EBResponseNOK result = (EBResponseNOK) EBInverterRequest.getResponse();
         System.out.println(result);
 
 

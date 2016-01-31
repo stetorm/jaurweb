@@ -6,7 +6,6 @@ import com.google.common.eventbus.Subscribe;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.cmd.InverterCommand;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
-import com.steto.jaurlib.response.AResp_CumulatedEnergy;
 import com.steto.jaurlib.response.AuroraResponse;
 import com.steto.jaurlib.response.ResponseErrorEnum;
 
@@ -28,7 +27,7 @@ public class EventBusInverterAdapter {
 
     @Subscribe
     @AllowConcurrentEvents
-    public void handleInverterCommand(EventBusInverterRequest cmd) {
+    public void handleInverterCommand(EBInverterRequest cmd) {
         EBResponse ebResponse=null;
 
 
