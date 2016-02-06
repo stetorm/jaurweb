@@ -13,6 +13,7 @@ public class EBPvOutputRequest extends EventBusRequest {
 
 
     public EBPvOutputRequest(Map cmdParams) {
+        super(cmdParams);
         this.opcode = (String) cmdParams.get("opcode");
 
     }
