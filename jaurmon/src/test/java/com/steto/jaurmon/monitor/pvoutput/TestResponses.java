@@ -76,7 +76,7 @@ public class TestResponses {
     }
 
     @Test
-    public void should() throws IOException, ConfigurationException, InterruptedException {
+    public void shouldPerformTest() throws IOException, ConfigurationException, InterruptedException {
 
         Integer pvOutputPort = 8082;
         String pvOutServiceUrl = "/pvoutputservice";
@@ -102,7 +102,7 @@ public class TestResponses {
 
         FakePVOutputServer fakePVOutputServer = new FakePVOutputServer(pvOutputPort, pvOutKey, systemId, pvOutServiceUrl);
         new Thread(fakePVOutputServer).start();
-        Thread.sleep(1000);
+        Thread.sleep(500);
 
         Map requestTest = new HashMap<>();
         requestTest.put("opcode", "test");

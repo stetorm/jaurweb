@@ -5,9 +5,13 @@ package com.steto.jaurmon.monitor;
  */
 public class PeriodicInverterTelemetries {
 
-    public float cumulatedEnergy;
-    public float gridPowerAll;
-    public float gridVoltageAll;
-    public float inverterTemp;
+    public long timestamp=0;
+    public float cumulatedEnergy=0;
+    public float gridPowerAll=0;
+    public float gridVoltageAll=0;
+    public float inverterTemp=0;
 
+    public void setTimestamp(long time) {
+        timestamp=time;
+    }
 }

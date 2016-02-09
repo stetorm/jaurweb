@@ -135,40 +135,6 @@ public class TestPublication2PvOutput {
          */
     }
 
-    @Test
-    public void shouldContactPVOutputServer() throws IOException, InterruptedException, SerialPortException {
-
-        // setup
-        Integer port = 8081;
-        String pvOutService = "/pvoutputservice";
-        String pvOutUrl = "http://localhost:" + port + pvOutService;
-        String pvOutKey = "a908fds653";
-        Integer systemId = 1223;
-
-        FakePVOutputServer fakePVOutputServer = new FakePVOutputServer(port, pvOutKey, systemId, pvOutService);
-        new Thread(fakePVOutputServer).start();
-        Thread.sleep(500);
-
-        /*
-        AuroraMonitorTestImpl auroraMonitor = new AuroraMonitorTestImpl(mock(AuroraDriver.class), "resources/aurora.cfg", "pvoutput");
-        auroraMonitor.setPvOutputUrl(pvOutUrl);
-        auroraMonitor.setPvOutputApiKey(pvOutKey);
-        auroraMonitor.setPvOutputSystemId(systemId);
-
-        // execution
-        auroraMonitor.testPvOutputServer();
-
-        // verify
-        String generatedRequest = fakePVOutputServer.getLastRequest();
-        Map<String, String> queryMap = HttpUtils.getQueryMap(generatedRequest);
-
-        Integer id = Integer.parseInt(queryMap.get("sid"));
-        String key = queryMap.get("key");
-
-        assertEquals(key, pvOutKey);
-        assertEquals(id, systemId);
-          */
-    }
 
     @Test
     public void shouldReadMalformedData() throws IOException, InterruptedException, SerialPortException {
