@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.core.unit;
+package com.steto.jaurmon.monitor.pvoutput;
 
 import com.steto.jaurmon.monitor.PeriodicInverterTelemetries;
 import com.steto.jaurmon.monitor.TelemetriesQueue;
