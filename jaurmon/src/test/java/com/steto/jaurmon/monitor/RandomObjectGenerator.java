@@ -33,6 +33,7 @@ public class RandomObjectGenerator {
         PVOutputParams pvOutParams = new PVOutputParams();
         pvOutParams.systemId = getInt(32);
         pvOutParams.period= getInt(100);
+        pvOutParams.timeWindowSec= getInt(1000);
         pvOutParams.apiKey = getString("api");
         pvOutParams.url = getString("http://url?");
         return pvOutParams;

@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.pvoutput;
+package com.steto.jaurmon.monitor.pvoutput.unit;
 
 import com.steto.jaurmon.monitor.PeriodicInverterTelemetries;
 import com.steto.jaurmon.monitor.TelemetriesQueue;
@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Created by stefano on 07/02/16.
@@ -90,5 +91,17 @@ public class TestDataStatistics {
         assertEquals(average200.timestamp,averageAll.timestamp, 0.00001);
 
     }
+
+
+    @Test
+    public void shouldHandleEmptyQueue() {
+
+        telemetriesQueue.removeOlderThan(1000);
+        PeriodicInverterTelemetries averageAll = telemetriesQueue.average();
+        assertNull(averageAll);
+
+
+    }
+
 
 }

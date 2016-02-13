@@ -29,6 +29,7 @@ public class TestUtility {
         iniConfObj.setProperty("pvoutput.apiKey", pvOutputParams.apiKey);
         iniConfObj.setProperty("pvoutput.period", pvOutputParams.period);
         iniConfObj.setProperty("pvoutput.url", pvOutputParams.url);
+        iniConfObj.setProperty("pvoutput.timeWindowSec", pvOutputParams.timeWindowSec);
 
         iniConfObj.save();
 

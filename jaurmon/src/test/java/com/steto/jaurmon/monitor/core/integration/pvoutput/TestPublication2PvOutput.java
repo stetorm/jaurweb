@@ -44,61 +44,6 @@ public class TestPublication2PvOutput {
 
     }
 
-    @Test
-    public void shouldPublishInverterData() throws Exception {
-
-
-        // setup
-        int port = 8080;
-        String pvOutService = "/pvoutputservice";
-        String pvOutUrl = "http://localhost:" + port + pvOutService;
-        String pvOutKey = "a908fds653";
-        Integer systemId = 1223;
-
-        FakePVOutputServer fakePVOutputServer = new FakePVOutputServer(port, pvOutKey, systemId, pvOutService);
-        new Thread(fakePVOutputServer).start();
-        Thread.sleep(1000);
-
-        AuroraMonitorTestImpl auroraMonitor = new AuroraMonitorTestImpl(mock(AuroraDriver.class), "resources/aurora.cfg", pvOutDirPath);
-        // TODO ALLINEARE
-        /*
-        auroraMonitor.setPvOutputUrl(pvOutUrl);
-        auroraMonitor.setPvOutputApiKey(pvOutKey);
-        auroraMonitor.setPvOutputSystemId(systemId);
-        */
-        auroraMonitor.setDailyCumulatedEnergy(701);
-        auroraMonitor.setAllPowerGeneration(2001);
-        auroraMonitor.setInverterTemperature(40.3);
-        auroraMonitor.setAllGridVoltage(240.7);
-
-        // execution
-        /*
-        auroraMonitor.publish2PvOutput();
-         */
-        // verify
-        String generatedRequest = fakePVOutputServer.getLastRequest();
-        Map<String, String> queryMap = HttpUtils.getQueryMap(generatedRequest);
-
-        Double dailyEnergy = Double.parseDouble(queryMap.get("v1"));
-        Double power = Double.parseDouble(queryMap.get("v2"));
-        Double temperature = Double.parseDouble(queryMap.get("v5"));
-        Double volt = Double.parseDouble(queryMap.get("v6"));
-        String date = queryMap.get("d");
-        String time = queryMap.get("t");
-        Integer id = Integer.parseInt(queryMap.get("sid"));
-        String key = queryMap.get("key");
-
-        assertEquals(key, pvOutKey);
-        assertEquals(id, systemId);
-        assertEquals(dailyEnergy, auroraMonitor.getDailyCumulatedEnergy(), 0.000001);
-        assertEquals(power, auroraMonitor.getAllPowerGeneration(), 0.000001);
-        assertEquals(temperature, auroraMonitor.getInverterTemperature(), 0.000001);
-        assertEquals(volt, auroraMonitor.getAllGridVoltage(), 0.000001);
-        assertNotNull(date);
-        assertNotNull(time);
-
-
-    }
 
     @Test
     public void shouldFailOnTimeout() throws IOException, InterruptedException, SerialPortException {

@@ -5,17 +5,26 @@ import com.google.common.eventbus.Subscribe;
 import com.steto.jaurlib.eventbus.EBResponse;
 import com.steto.jaurlib.eventbus.EBResponseNOK;
 import com.steto.jaurlib.eventbus.EBResponseOK;
+import com.steto.jaurmon.monitor.PeriodicInverterTelemetries;
+import com.steto.jaurmon.monitor.TelemetriesQueue;
 import com.steto.jaurmon.utils.HttpUtils;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.logging.Logger;
 
 /**
@@ -28,6 +37,9 @@ public class PvOutputNew {
     private final String configfileName;
     private PVOutputParams params;
     protected Logger log = Logger.getLogger(getClass().getSimpleName());
+    private  boolean running=false;
+    TelemetriesQueue telemetriesQueue = new TelemetriesQueue();
+    private int HTTP_REQUEST_TIMEOUT =10000;
 
     public PvOutputNew(String aFileName, EventBus aEventBus) {
         theEventBus = aEventBus;
@@ -43,12 +55,13 @@ public class PvOutputNew {
         try {
             result = new PVOutputParams();
             HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(fileName);
-            SubnodeConfiguration inverterParams = iniConfObj.getSection("pvoutput");
+            SubnodeConfiguration params = iniConfObj.getSection("pvoutput");
 
-            result.url = inverterParams.getString("url");
-            result.period = inverterParams.getFloat("period");
-            result.systemId = inverterParams.getInt("systemId");
-            result.apiKey = inverterParams.getString("apiKey");
+            result.url = params.getString("url");
+            result.period = params.getFloat("period");
+            result.systemId = params.getInt("systemId");
+            result.apiKey = params.getString("apiKey");
+            result.timeWindowSec = params.getFloat("timeWindowSec");
 
         } catch (Exception e) {
             String errMsg = "Error reading file: " + fileName + ", " + e.getMessage();
@@ -58,6 +71,21 @@ public class PvOutputNew {
         return result;
     }
 
+    @Subscribe
+    public void handle(PeriodicInverterTelemetries telemetries) {
+        try{
+
+            if (running) {
+                telemetriesQueue.add(telemetries);
+                log.info("Stored telemetries: " + telemetries);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            log.severe(ex.getMessage());
+        }
+    }
     @Subscribe
     public void handle(EBPvOutputRequest request) {
 
@@ -72,6 +100,12 @@ public class PvOutputNew {
                 case "test":
                     request.response = handleTestRequest(request.paramsMap);
                     break;
+                case "start":
+                    request.response = handleStartRequest(request.paramsMap);
+                    break;
+                case "stop":
+                    request.response = handleStopRequest(request.paramsMap);
+                    break;
                 default:
                     request.response = new EBResponseNOK(-1, "Received invalid command: " + request.opcode());
                     break;
@@ -82,7 +116,7 @@ public class PvOutputNew {
         }
     }
 
-    private EBResponse handleTestRequest(Map paramsMap) {
+    protected EBResponse handleTestRequest(Map paramsMap) {
 
         EBResponse result;
         try {
@@ -96,6 +130,31 @@ public class PvOutputNew {
 
     }
 
+    protected EBResponse handleStartRequest(Map paramsMap) {
+
+        EBResponse result;
+        try {
+            if (!running)
+            {
+                start();
+            }
+            result = new EBResponseOK("") ;
+        } catch (Exception ex) {
+            result = new EBResponseNOK(1, ex.getMessage());
+        }
+
+        return result;
+
+    }
+
+    protected EBResponse handleStopRequest(Map paramsMap) {
+
+        stop();
+        return new EBResponseOK("");
+
+    }
+
+
     protected EBResponse handleReadRequest(Map paramsMap) {
         return new EBResponseOK(params);
     }
@@ -108,6 +167,7 @@ public class PvOutputNew {
             newParams.url = (String) paramsMap.get("url");
             newParams.systemId = (int) paramsMap.get("systemId");
             newParams.period = (float) paramsMap.get("period");
+            newParams.timeWindowSec = (float) paramsMap.get("timeWindowSec");
             saveParams(newParams);
             params = newParams;
             result = new EBResponseOK("");
@@ -125,6 +185,7 @@ public class PvOutputNew {
         iniConfObj.setProperty("pvoutput.apiKey", newParams.apiKey);
         iniConfObj.setProperty("pvoutput.period", newParams.period);
         iniConfObj.setProperty("pvoutput.url", newParams.url);
+        iniConfObj.setProperty("pvoutput.timeWindowSec", newParams.timeWindowSec);
 
         iniConfObj.save();
 
@@ -158,6 +219,118 @@ public class PvOutputNew {
 
         String result = params.url + "/getinsolation.jsp?" + HttpUtils.urlEncodeUTF8(map);
         return result;
+    }
+
+
+    private void stop() {
+        running=false;
+        log.info("Main Loop Stopped");
+    }
+
+    public void start(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mainLoop();
+            }
+        }).start();
+    }
+
+    protected void mainLoop() {
+        final long PERIODICITY  = (long) (params.period*1000);
+        final long WINDOW_MS  = (long)(params.timeWindowSec*1000);
+        log.info("Main Loop Started");
+        running=true;
+        while (running)
+        {
+            try {
+
+                Long now = new Date().getTime();
+                Long since = now-WINDOW_MS;
+                telemetriesQueue.removeOlderThan(since);
+                PeriodicInverterTelemetries dataPublished = telemetriesQueue.average();
+                if (dataPublished!=null)
+                {
+                    publish2PvOutput(dataPublished);
+                }
+                else
+                {
+                  log.fine("No data available for publication");
+                }
+                Thread.sleep(PERIODICITY);
+            } catch (Exception e) {
+                log.severe(e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+
+    public boolean publish2PvOutput(PeriodicInverterTelemetries telemetries) throws IOException {
+        boolean executed = false;
+        String requestUrl = generatePvOutputLiveUpdateUrl(telemetries);// put in your url
+        int responseCode = -1;
+
+        try {
+
+            RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(HTTP_REQUEST_TIMEOUT).build();
+            HttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+
+            HttpGet request = new HttpGet(requestUrl);
+
+            org.apache.http.HttpResponse response = httpClient.execute(request);
+            log.fine("Response code:" + response.getStatusLine());
+
+            responseCode = response.getStatusLine().getStatusCode();
+            log.info("Sending 'GET' request: " + requestUrl);
+
+
+        } catch (Exception e) {
+            log.severe("Error publishing data to PVOutput: " + e.getMessage());
+        }
+        executed = (responseCode == 200);
+        if (!executed) {
+            log.info("Errore nell'invio dei dati: \n" + telemetries);
+//            savePvOutputRecord(pvOutputRecord);
+        } else {
+            log.info("Dati inviati a PVOutput: \n" + telemetries);
+        }
+
+        return executed;
+    }
+
+    private String generatePvOutputLiveUpdateUrl(PeriodicInverterTelemetries tele) {
+        Map<String, Object> map = new LinkedHashMap<>();
+
+        Date now = new Date();
+        now.setTime(tele.timestamp);
+        String date = convertDate(now);
+        String time = convertDayTime(now);
+        map.put("key", params.apiKey);
+        map.put("sid", params.systemId);
+        map.put("d", date);
+        map.put("t", time);
+        map.put("v1", tele.cumulatedEnergy);
+        map.put("v2", tele.gridPowerAll);
+        map.put("v5", tele.inverterTemp);
+        map.put("v6", tele.gridVoltageAll);
+
+        String result = params.url + "/addstatus.jsp?" + HttpUtils.urlEncodeUTF8(map);
+        return result;
+    }
+
+    public static String convertDate(Date aDate) {
+        SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+
+        return DATE_FORMAT.format(aDate);
+    }
+
+    public static String convertDayTime(Date aDate) {
+        SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm");
+        DATE_FORMAT.setTimeZone(TimeZone.getDefault());
+
+        return DATE_FORMAT.format(aDate);
     }
 
 

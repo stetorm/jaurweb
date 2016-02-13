@@ -39,6 +39,9 @@ public class TelemetriesQueue {
                 result.inverterTemp += telemetry.inverterTemp;
             }
         }
+        if (count==0)
+            return null;
+
         result.gridPowerAll /= count;
         result.gridVoltageAll /= count;
         result.inverterTemp /= count;

@@ -10,6 +10,7 @@ public class PVOutputParams {
     public float period;
     public String url;
     public String apiKey;
+    public float timeWindowSec;
 
     public Properties toProperties() {
         Properties result = new Properties();
