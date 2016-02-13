@@ -67,10 +67,13 @@ public class AuroraWebServer implements Runnable {
         cmdContext.setContextPath("/cmd");
         cmdContext.setHandler(new InverterCmdHandler(theEventBus));
 
+        ContextHandler pvoutputContext = new ContextHandler();
+        pvoutputContext.setContextPath("/pvoutput");
+        pvoutputContext.setHandler(new InverterCmdHandler(theEventBus));
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         contexts.setHandlers(new Handler[]{
-                        resourceContext, cmdContext
+                        resourceContext, cmdContext, pvoutputContext
                 }
         );
 

@@ -6,6 +6,7 @@ import com.steto.jaurlib.eventbus.EBInverterRequest;
 import com.steto.jaurkit.EventBusRequest;
 
 import com.steto.jaurmon.monitor.cmd.*;
+import com.steto.jaurmon.monitor.pvoutput.EBPvOutputRequest;
 import com.steto.jaurmon.utils.HttpUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -50,18 +51,8 @@ class InverterCmdHandler extends AbstractHandler {
             case "inv":
                 result = new EBInverterRequest(cmdParams);
                 break;
-
-            case "pvOutputTest":
-                // TODO
-                // responseString = theEventBus.execCommand(new MonCmdTestPVoutput(queryMap));
-                break;
-            case "pvOutputStart":
-                // TODO
-                //theEventBus.startPvOutput();
-                break;
-            case "pvOutputStop":
-                // TODO
-                // theEventBus.stopPvOutput();
+            case "pvoutput":
+                result = new EBPvOutputRequest(cmdParams);
                 break;
 
         }

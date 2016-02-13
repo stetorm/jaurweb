@@ -18,6 +18,7 @@ import com.steto.jaurmon.monitor.cmd.MonCmdReadStatus;
 import com.steto.jaurmon.monitor.cmd.MonReqLoadInvSettings;
 import com.steto.jaurmon.monitor.cmd.MonReqSaveInvSettings;
 import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
+import com.steto.jaurmon.monitor.pvoutput.PvOutputNew;
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
 import jssc.SerialPortException;
 import org.apache.commons.configuration.ConfigurationException;
@@ -487,6 +488,8 @@ public class AuroraMonitor {
             EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus, auroraDriver, new InverterCommandFactory());
             auroraMonitor.init();
             auroraMonitor.start();
+            PvOutputNew pvOutput = new PvOutputNew(configurationFileName,theEventBus);
+            pvOutput.start();
 
             log.info("Creating Web Server...");
             AuroraWebServer auroraWebServer = new AuroraWebServer(8080, webDirectoryPath, theEventBus);

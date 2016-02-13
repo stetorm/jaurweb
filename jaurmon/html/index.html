@@ -287,6 +287,252 @@
 <!-- Boostrap -->
 <script src="/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
 
+
+
+<script type="text/javascript">
+
+
+    function setInverterOnline() {
+
+        $("#lblInverterStatus").attr("class", "label label-success");
+
+    }
+
+    function setInverterOffline() {
+        $("#lblInverterStatus").attr("class", "label label-danger");
+
+    }
+
+    function setPvOutputRunning(isRunning) {
+
+        var btnStart = $("#btnPVoutStart");
+        var btnStop = $("#btnPVoutStop");
+
+        if (isRunning) {
+            btnStart.addClass("active");
+            btnStop.removeClass("active");
+        }
+        else {
+            btnStop.addClass("active");
+            btnStart.removeClass("active");
+
+        }
+
+    }
+
+
+    function createPVoutParamsQueryString() {
+
+
+        var periodBtnActive = $('[id^="btnPeriod"] [active]').first();
+
+        var data = {
+            pvOutputApiKey: $("#txtAPIkey").val(),
+            pvOutputSystemId: $("#txtSystemId").val(),
+            pvOutputUrl: $("#txtPVoutUrl").val()
+//            pvOutputPeriod:periodBtnActive.text()
+        };
+
+
+        var encodedData = $.param(data);
+
+        return encodedData;
+
+    }
+
+    function sendInvCommand(cmd) {
+        var dataUrl = '/cmd/inv?';
+
+        var urlString = dataUrl + $.param(cmd);
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            console.log("Executed command: " + urlString + " with response: " + status);
+            textOutput = $("#areaResult").text();
+            if (textOutput != null) {
+                var dispValue;
+                var jsonMsg = JSON.parse(msg);
+                if ("error" in jsonMsg) {
+                    dispValue = "ERROR: " + jsonMsg.error.message;
+                }
+                else {
+                    dispValue = jsonMsg.data;
+                }
+                $("#areaResult").text(dispValue + "\n" + textOutput);
+
+            }
+
+
+        });
+
+
+    }
+
+    function sendPvOutputTestCommand() {
+        var urlString = '/pvoutput?opcode=test';
+
+
+        console.log('urlString ' + urlString);
+        console.log("PVoutput test executed");
+
+        return $.get(urlString);
+
+    }
+
+    function sendSaveCfgCommand() {
+        var urlString = '/cmd/saveCfg?';
+
+        var cmdMap = {};
+        cmdMap["pvOutputApiKey"] = $("#txtAPIkey").val();
+        cmdMap["pvOutputSystemId"] = $("#txtSystemId").val();
+        cmdMap["pvOutputUrl"] = $("#txtPVoutUrl").val();
+
+        urlString = urlString + $.param(cmdMap);
+        console.log('urlString ' + urlString);
+        console.log("PVoutput settings saved");
+
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            console.log("Executed command: " + urlString + " with response: " + status);
+
+        });
+
+    }
+
+    function sendSaveSettings() {
+
+        var urlString = '/cmd/saveInvSettings?';
+
+        var cmdMap = {};
+
+        cmdMap["serialPort"] = $("#txtSerialPort").val();
+        cmdMap["baudRate"] = $("#txtBaudRate").val();
+        cmdMap["inverterAddress"] = $("#txtInvAddress").val();
+
+        urlString = urlString + $.param(cmdMap);
+        console.log('urlString ' + urlString);
+        console.log("PVoutput settings saved");
+
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            console.log("Executed command: " + urlString + " with response: " + status);
+
+        });
+
+    }
+
+    function sendPvOutputStopCommand() {
+        var urlString = '/pvoutput?opcode=stop';
+
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var jsonResponse = JSON.parse(msg);
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var data = jsonResponse.data;
+                console.log("Stop Request Successfully executed:")
+            }
+        });
+
+
+    }
+
+    function sendPvOutputStartCommand() {
+        var urlString = '/pvoutput?opcode=start';
+
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var jsonResponse = JSON.parse(msg);
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var data = jsonResponse.data;
+                console.log("Start Request Successfully executed:")
+            }
+        });
+
+    }
+
+    function sendLoadStatusCommand() {
+        var urlString = '/cmd/status';
+
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var params = JSON.parse(msg);
+
+            var invStatus = params["inverterStatus"];
+            var pvOutputStatus = params["pvOutputStatus"];
+
+            setPvOutputRunning(pvOutputStatus == "on");
+
+            if (invStatus == "online") {
+
+                setInverterOnline();
+            } else {
+                setInverterOffline();
+            }
+        });
+
+    }
+
+    function sendLoadInvCfgCommand() {
+        var urlString = '/cmd/loadInvSettings';
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var jsonResponse = JSON.parse(msg);
+            if ("error" in jsonResponse) {
+                   console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var data = jsonResponse.data;
+                $("#txtSerialPort").val(data["serialPort"]);
+                $("#txtBaudRate").val(data["serialPortBaudRate"]);
+                $("#txtInvAddress").val(data["inverterAddress"]);
+            }
+        });
+
+    }
+    function sendLoadPvOutputCommand() {
+        var urlString = '/pvoutput?opcode=read';
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var jsonResponse = JSON.parse(msg);
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var data = jsonResponse.data;
+                $("#txtPVoutUrl").val(data["url"]);
+                $("#txtAPIkey").val(data["apiKey"]);
+                $("#txtSystemId").val(data["systemId"]);
+            }
+        });
+    }
+
+
+</script>
+
 <script type="text/javascript">
     jQuery(document).ready(function () {
         console.log("partito");
@@ -363,11 +609,12 @@
             sendPvOutputTestCommand().done(function (result) {
                 console.log("responseString :" + result);
                 var cl = thisButton.attr("class");
-                result = JSON.parse(result);
-                if (result['result'] == 'OK') {
-                    thisButton.attr("class", cl + " btn-success");
-                } else {
+                var jsonResponse = JSON.parse(result);
+
+                if ("error" in jsonResponse) {
                     thisButton.attr("class", cl + " btn-danger");
+                } else {
+                    thisButton.attr("class", cl + " btn-success");
                 }
                 setTimeout(function () {
                     thisButton.attr("class", cl)
@@ -387,239 +634,11 @@
         window.setInterval(sendLoadStatusCommand, 30000);
         sendLoadStatusCommand();
         sendLoadInvCfgCommand();
+        sendLoadPvOutputCommand();
 
     });
 </script>
 
-<script>
-
-
-    function setInverterOnline() {
-
-        $("#lblInverterStatus").attr("class", "label label-success");
-
-    }
-
-    function setInverterOffline() {
-        $("#lblInverterStatus").attr("class", "label label-danger");
-
-    }
-
-    function setPvOutputRunning(isRunning) {
-
-        var btnStart = $("#btnPVoutStart");
-        var btnStop = $("#btnPVoutStop");
-
-        if (isRunning) {
-            btnStart.addClass("active");
-            btnStop.removeClass("active");
-        }
-        else {
-            btnStop.addClass("active");
-            btnStart.removeClass("active");
-
-        }
-
-    }
-
-
-    function createPVoutParamsQueryString() {
-
-
-        var periodBtnActive = $('[id^="btnPeriod"] [active]').first();
-
-        var data = {
-            pvOutputApiKey: $("#txtAPIkey").val(),
-            pvOutputSystemId: $("#txtSystemId").val(),
-            pvOutputUrl: $("#txtPVoutUrl").val()
-//            pvOutputPeriod:periodBtnActive.text()
-        };
-
-
-        var encodedData = $.param(data);
-
-        return encodedData;
-
-    }
-
-    function sendInvCommand(cmd) {
-        var dataUrl = '/cmd/inv?';
-
-        var urlString = dataUrl + $.param(cmd);
-        console.log('urlString ' + urlString);
-        $.get(urlString, function (msg, status) {
-
-            console.log("Response received: " + msg);
-            console.log("Executed command: " + urlString + " with response: " + status);
-            textOutput = $("#areaResult").text();
-            if (textOutput != null) {
-                var dispValue;
-                var jsonMsg = JSON.parse(msg);
-                if ("error" in jsonMsg) {
-                    dispValue = "ERROR: " + jsonMsg.error.message;
-                }
-                else {
-                    dispValue = jsonMsg.data;
-                }
-                $("#areaResult").text(d∂ispValue + "\n" + textOutput);
-
-            }
-
-
-        });
-
-
-    }
-
-    function sendPvOutputTestCommand() {
-        var urlString = '/cmd/pvOutputTest';
-
-        var encodedData = createPVoutParamsQueryString();
-
-        urlString = urlString + "?" + encodedData;
-        console.log('urlString ' + urlString);
-        console.log("PVoutput text executed");
-
-        return $.get(urlString);
-
-    }
-
-    function sendSaveCfgCommand() {
-        var urlString = '/cmd/saveCfg?';
-
-        var cmdMap = {};
-        cmdMap["pvOutputApiKey"] = $("#txtAPIkey").val();
-        cmdMap["pvOutputSystemId"] = $("#txtSystemId").val();
-        cmdMap["pvOutputUrl"] = $("#txtPVoutUrl").val();
-
-        urlString = urlString + $.param(cmdMap);
-        console.log('urlString ' + urlString);
-        console.log("PVoutput settings saved");
-
-        $.get(urlString, function (msg, status) {
-
-            console.log("Response received: " + msg);
-            console.log("Executed command: " + urlString + " with response: " + status);
-
-        });
-
-    }
-
-    function sendSaveSettings() {
-
-        var urlString = '/cmd/saveInvSettings?';
-
-        var cmdMap = {};
-
-        cmdMap["serialPort"] = $("#txtSerialPort").val();
-        cmdMap["baudRate"] = $("#txtBaudRate").val();
-        cmdMap["inverterAddress"] = $("#txtInvAddress").val();
-
-        urlString = urlString + $.param(cmdMap);
-        console.log('urlString ' + urlString);
-        console.log("PVoutput settings saved");
-
-        $.get(urlString, function (msg, status) {
-
-            console.log("Response received: " + msg);
-            console.log("Executed command: " + urlString + " with response: " + status);
-
-        });
-
-    }
-
-    function sendPvOutputStopCommand() {
-        var urlString = '/cmd/pvOutputStop';
-
-
-        console.log('urlString ' + urlString);
-        $.get(urlString, function (msg, status) {
-
-            console.log("Response received: " + msg);
-            console.log("Executed command: " + urlString + " with response: " + status);
-
-        });
-
-    }
-
-    function sendPvOutputStartCommand() {
-        var urlString = '/cmd/pvOutputStart';
-
-
-        console.log('urlString ' + urlString);
-        $.get(urlString, function (msg, status) {
-
-            console.log("Response received: " + msg);
-            console.log("Executed command: " + urlString + " with response: " + status);
-
-        });
-
-    }
-
-    function sendLoadStatusCommand() {
-        var urlString = '/cmd/status';
-
-
-        console.log('urlString ' + urlString);
-        $.get(urlString, function (msg, status) {
-
-            console.log("Response received: " + msg);
-            var params = JSON.parse(msg);
-
-            var invStatus = params["inverterStatus"];
-            var pvOutputStatus = params["pvOutputStatus"];
-
-            setPvOutputRunning(pvOutputStatus == "on");
-
-            if (invStatus == "online") {
-
-                setInverterOnline();
-            } else {
-                setInverterOffline();
-            }
-        });
-
-    }
-
-    function sendLoadInvCfgCommand() {
-        var urlString = '/cmd/loadInvSettings';
-
-        console.log('urlString ' + urlString);
-        $.get(urlString, function (msg, status) {
-
-            console.log("Response received: " + msg);
-            var jsonResponse = JSON.parse(msg);
-            if ("error" in jsonResponse) {
-                   console.log("Received error response: "+jsonResponse)
-            }
-            else {
-                var data = jsonResponse.data;
-                $("#txtSerialPort").val(data["serialPort"]);
-                $("#txtBaudRate").val(data["serialPortBaudRate"]);
-                $("#txtInvAddress").val(data["inverterAddress"]);
-            }
-        });
-
-    }
-    function sendLoadPvOutputCommand() {
-        var urlString = '/cmd/loadInvSettings';
-
-        console.log('urlString ' + urlString);
-        $.get(urlString, function (msg, status) {
-
-            console.log("Response received: " + msg);
-            var params = JSON.parse(msg);
-            $("#txtPVoutUrl").val(params["pvOutputUrl"]);
-            $("#txtAPIkey").val(params["pvOutputApiKey"]);
-            $("#txtSystemId").val(params["pvOutputSystemId"]);
-            $("#txtSerialPort").val(params["serialPort"]);
-            $("#txtBaudRate").val(params["baudRate"]);
-            $("#txtInvAddress").val(params["inverterAddress"]);
-        });
-
-    }
-
-</script>
 </body>
 
 </html>
