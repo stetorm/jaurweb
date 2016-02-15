@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.core.integration.coremon;
+package com.steto.jaurmon.monitor.core.integration;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -11,6 +11,7 @@ import com.steto.jaurlib.response.AResp_CumulatedEnergy;
 import com.steto.jaurlib.response.AResp_DspData;
 import com.steto.jaurmon.monitor.AuroraMonitor;
 import com.steto.jaurmon.monitor.HwSettings;
+import com.steto.jaurmon.monitor.MonitorSettings;
 import com.steto.jaurmon.monitor.PeriodicInverterTelemetries;
 import org.junit.After;
 import org.junit.Before;
@@ -19,8 +20,10 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.util.Date;
 
 import static com.steto.jaurmon.monitor.RandomObjectGenerator.getA_HwSettings;
+import static com.steto.jaurmon.monitor.RandomObjectGenerator.getA_MonitorSettings;
 import static com.steto.jaurmon.monitor.TestUtility.createAuroraConfigFile;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
@@ -34,25 +37,42 @@ import static org.mockito.Mockito.when;
 public class TestInverterDataAcquisitionEngine {
 
 
-    class  TelemetriesReceiver  {
+    class TelemetriesReceiver {
 
         private final Object waitVar;
+        private final int cardinality;
         public PeriodicInverterTelemetries telemetries;
+        public int counter = 0;
+        long deltaTmsec =0;
 
-        public TelemetriesReceiver(Object waitVar) {
+        public TelemetriesReceiver(int cardinality, Object waitVar) {
             this.waitVar = waitVar;
+            this.cardinality = cardinality;
         }
 
 
         @Subscribe
         public void handle(PeriodicInverterTelemetries msg) {
+            counter++;
+            if (counter==1)
+            {
+                deltaTmsec = new Date().getTime();
+            }
+            else
+            if (counter==2)
+            {
+                deltaTmsec =  new Date().getTime() - deltaTmsec;
+            }
             telemetries = msg;
             synchronized (waitVar) {
-                waitVar.notifyAll();
+                if (counter >= cardinality)
+                    waitVar.notifyAll();
             }
         }
 
-    };
+    }
+
+    ;
 
     File resourcesDirectory = new File("src/test/resources");
 
@@ -66,13 +86,15 @@ public class TestInverterDataAcquisitionEngine {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
     private HwSettings hwSettings;
+    private MonitorSettings monitorSettings;
 
 
     @Before
     public void before() throws Exception {
 
         hwSettings = getA_HwSettings();
-        createAuroraConfigFile(configFile,hwSettings);
+        monitorSettings = getA_MonitorSettings();
+        createAuroraConfigFile(configFile, hwSettings, monitorSettings);
 
         pvOutDirPath = tempFolder.newFolder().getAbsolutePath();
         auroraMonitor = new AuroraMonitor(theEventBus, auroraDriver, configFile, pvOutDirPath);
@@ -95,11 +117,14 @@ public class TestInverterDataAcquisitionEngine {
 
         final Object waitVar = new Object();
 
+        int NUM_OF_TELEMETRIES = 3;
 
         float gridPowerAll = (float) 321.3;
         float gridVoltageAll = (float) 221.5;
         float inverterTemperature = (float) 27.4;
         Float cumulatedEnergy = (float) 1367.0;
+        float inverterInterrPeriod = (float) 0.5;
+
 
         AResp_CumulatedEnergy cumulateEnergyResponse = new AResp_CumulatedEnergy();
         AResp_DspData responseGridPowerAll = new AResp_DspData();
@@ -116,10 +141,11 @@ public class TestInverterDataAcquisitionEngine {
         when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.GRID_VOLTAGE_ALL))).thenReturn(responseGridVoltageAll);
         when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED))).thenReturn(respInverterTemperature);
 
-        TelemetriesReceiver telemetriesReceiver = new TelemetriesReceiver(waitVar);
+        TelemetriesReceiver telemetriesReceiver = new TelemetriesReceiver(NUM_OF_TELEMETRIES, waitVar);
         theEventBus.register(telemetriesReceiver);
 
         // Exercise
+        auroraMonitor.setInverterInterrogationPeriod(inverterInterrPeriod);
         auroraMonitor.start();
 
         synchronized (waitVar) {
@@ -128,11 +154,12 @@ public class TestInverterDataAcquisitionEngine {
 
 
         // Verify
-        assertEquals(gridPowerAll,telemetriesReceiver.telemetries.gridPowerAll,0.0001);
-        assertEquals(gridVoltageAll,telemetriesReceiver.telemetries.gridVoltageAll,0.0001);
-        assertEquals(inverterTemperature,telemetriesReceiver.telemetries.inverterTemp,0.0001);
-        assertEquals(cumulatedEnergy,telemetriesReceiver.telemetries.cumulatedEnergy,0.0001);
-
+        assertEquals(NUM_OF_TELEMETRIES, telemetriesReceiver.counter);
+        assertEquals(inverterInterrPeriod*1000, telemetriesReceiver.deltaTmsec,20);
+        assertEquals(gridPowerAll, telemetriesReceiver.telemetries.gridPowerAll, 0.0001);
+        assertEquals(gridVoltageAll, telemetriesReceiver.telemetries.gridVoltageAll, 0.0001);
+        assertEquals(inverterTemperature, telemetriesReceiver.telemetries.inverterTemp, 0.0001);
+        assertEquals(cumulatedEnergy, telemetriesReceiver.telemetries.cumulatedEnergy, 0.0001);
 
 
     }

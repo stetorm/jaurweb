@@ -13,6 +13,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -151,4 +152,12 @@ public class FakePVOutputServer implements Runnable {
         return this.responseDelay ;
     }
 
+    public String waitForRequest(long wait) throws InterruptedException {
+        long timestamp = new Date().getTime();
+        while( null==getLastRequest() && ((new Date().getTime()-timestamp)<wait) )
+        {
+            Thread.sleep(200);
+        }
+        return getLastRequest();
+    }
 }

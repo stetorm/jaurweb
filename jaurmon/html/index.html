@@ -465,7 +465,7 @@
 
     }
 
-    function sendLoadStatusCommand() {
+    function sendLoadInvStatusCommand() {
         var urlString = '/cmd/status';
 
 
@@ -473,19 +473,48 @@
         $.get(urlString, function (msg, status) {
 
             console.log("Response received: " + msg);
-            var params = JSON.parse(msg);
+            var jsonResponse = JSON.parse(msg);
 
-            var invStatus = params["inverterStatus"];
-            var pvOutputStatus = params["pvOutputStatus"];
-
-            setPvOutputRunning(pvOutputStatus == "on");
-
-            if (invStatus == "online") {
-
-                setInverterOnline();
-            } else {
-                setInverterOffline();
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
             }
+            else {
+                var invStatus = jsonResponse.data;
+
+
+//                setPvOutputRunning(pvOutputStatus == "on");
+
+                if (invStatus == "online") {
+                    setInverterOnline();
+                } else {
+                    setInverterOffline();
+                }
+            }
+
+        });
+
+    }
+
+    function sendLoadPvoutputStatusCommand() {
+        var urlString = '/pvoutput?opcode=status';
+
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var jsonResponse = JSON.parse(msg);
+
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var pvOutputStatus = jsonResponse.data;
+
+                setPvOutputRunning(pvOutputStatus == "on");
+
+            }
+
         });
 
     }
@@ -510,7 +539,7 @@
         });
 
     }
-    function sendLoadPvOutputCommand() {
+    function sendLoadPvOutputSettingsCommand() {
         var urlString = '/pvoutput?opcode=read';
 
         console.log('urlString ' + urlString);
@@ -631,10 +660,11 @@
         });
 
 
-        window.setInterval(sendLoadStatusCommand, 30000);
-        sendLoadStatusCommand();
+        window.setInterval(sendLoadInvStatusCommand, 30000);
+        sendLoadInvStatusCommand();
         sendLoadInvCfgCommand();
-        sendLoadPvOutputCommand();
+        sendLoadPvOutputSettingsCommand();
+        sendLoadPvoutputStatusCommand();
 
     });
 </script>

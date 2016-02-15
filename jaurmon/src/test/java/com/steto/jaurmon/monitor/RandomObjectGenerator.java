@@ -1,5 +1,6 @@
 package com.steto.jaurmon.monitor;
 
+import com.steto.jaurmon.monitor.cmd.MonReqLoadInvSettings;
 import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
 import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
 
@@ -27,6 +28,12 @@ public class RandomObjectGenerator {
         hwSettings.serialPortBaudRate = getInt(105000);
         hwSettings.serialPort = getString("/dev/myserialPort");
         return hwSettings;
+    }
+
+    public static MonitorSettings getA_MonitorSettings() {
+        MonitorSettings monitorSettings = new MonitorSettings();
+        monitorSettings.inverterInterrogationPeriodSec = getInt(1000);
+        return monitorSettings;
     }
 
     public static PVOutputParams getA_PvOutputParams() {
@@ -81,4 +88,12 @@ public class RandomObjectGenerator {
         return baseString + getInt(100000);
     }
 
+    public static PeriodicInverterTelemetries getA_PeriodicInverterTelemetries() {
+        PeriodicInverterTelemetries result = new PeriodicInverterTelemetries();
+        result.gridVoltageAll = getFloat(500);
+        result.cumulatedEnergy = getFloat(50000);
+        result.inverterTemp = getFloat(100);
+        result.gridPowerAll = getFloat(10000);
+        return result;
+    }
 }

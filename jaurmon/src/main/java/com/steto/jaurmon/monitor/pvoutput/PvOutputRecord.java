@@ -1,5 +1,6 @@
 package com.steto.jaurmon.monitor.pvoutput;
 
+import com.steto.jaurmon.monitor.PeriodicInverterTelemetries;
 import com.steto.jaurmon.utils.MyUtils;
 
 import java.util.Date;
@@ -14,6 +15,20 @@ public class PvOutputRecord {
     public float totalPowerGenerated = 0;
     public float temperature = 0;
     public float totalGridVoltage = 0;
+
+    public PvOutputRecord(PeriodicInverterTelemetries telemetries) {
+        timestamp = telemetries.timestamp;
+        dailyCumulatedEnergy = telemetries.cumulatedEnergy;
+        totalPowerGenerated = telemetries.gridPowerAll;
+        temperature = telemetries.inverterTemp;
+        totalGridVoltage = telemetries.gridVoltageAll;
+
+    }
+
+    public PvOutputRecord() {
+
+
+    }
 
     @Override
     public boolean equals(Object other) {
@@ -32,8 +47,7 @@ public class PvOutputRecord {
         return result;
     }
 
-    public Date getDate()
-    {
+    public Date getDate() {
         Date date = new Date();
         date.setTime(timestamp);
         return date;

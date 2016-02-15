@@ -5,33 +5,28 @@ import com.steto.jaurlib.eventbus.EBResponse;
 import com.steto.jaurlib.eventbus.EBResponseOK;
 import com.steto.jaurmon.monitor.FakePVOutputServer;
 import com.steto.jaurmon.monitor.PeriodicInverterTelemetries;
-import com.steto.jaurmon.monitor.RandomObjectGenerator;
 import com.steto.jaurmon.monitor.pvoutput.EBPvOutputRequest;
 import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
 import com.steto.jaurmon.monitor.pvoutput.PvOutputNew;
 import com.steto.jaurmon.utils.HttpUtils;
 import jssc.SerialPortException;
-import junit.framework.*;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.*;
-import org.junit.Assert;
-import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static com.steto.jaurmon.monitor.RandomObjectGenerator.getA_PvOutputParams;
 import static com.steto.jaurmon.monitor.RandomObjectGenerator.getInt;
 import static com.steto.jaurmon.monitor.TestUtility.createPvoutputConfigFile;
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNull;
-import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.*;
 
 /**
  * Created by stefano on 31/01/16.
@@ -42,13 +37,13 @@ public class TestResponses {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     String tempPvOutputFile;
-    FakePVOutputServer fakePVOutputServer ;
+    FakePVOutputServer fakePVOutputServer;
     Future<?> fakeServerExecutorFuture;
     private PVOutputParams pvOutputParams;
 
 
     @Before
-    public  void setupFakeServerAndConfigFile() throws ConfigurationException, IOException, InterruptedException {
+    public void setupFakeServerAndConfigFile() throws ConfigurationException, IOException, InterruptedException {
 
         tempPvOutputFile = tempFolder.newFile().getAbsolutePath();
 
@@ -82,7 +77,7 @@ public class TestResponses {
     @After
     public void after() throws Exception {
         fakePVOutputServer.stop();
-        if(fakeServerExecutorFuture!=null) {
+        if (fakeServerExecutorFuture != null) {
             fakeServerExecutorFuture.cancel(true);
         }
 
@@ -152,7 +147,7 @@ public class TestResponses {
         eventBus.post(ebPvOutputRequest);  //save configuration data
 
         //verify
-        EBResponse ebResponse= ebPvOutputRequest.response;
+        EBResponse ebResponse = ebPvOutputRequest.response;
         assertTrue(ebResponse instanceof EBResponseOK);
 
     }
@@ -178,7 +173,7 @@ public class TestResponses {
 
 
         //verify
-        EBResponse ebResponse= ebPvOutputRequest.response;
+        EBResponse ebResponse = ebPvOutputRequest.response;
         assertTrue(ebResponse instanceof EBResponseOK);
         assertNotNull(fakePVOutputServer.getLastRequest());
 
@@ -205,12 +200,58 @@ public class TestResponses {
 
 
         //verify
-        EBResponse ebResponse= ebPvOutputRequest.response;
+        EBResponse ebResponse = ebPvOutputRequest.response;
         assertTrue(ebResponse instanceof EBResponseOK);
         assertNull(fakePVOutputServer.getLastRequest());
 
     }
 
+
+    @Test
+    public void shouldLoadStatusOff() throws Exception {
+
+        //Setup
+
+        EventBus eventBus = new EventBus();
+        PvOutputNew pvOutput = new PvOutputNew(tempPvOutputFile, eventBus);
+
+        Map requestStatus = new HashMap<>();
+        requestStatus.put("opcode", "status");
+        EBPvOutputRequest ebPvOutputRequest = new EBPvOutputRequest(requestStatus);
+        eventBus.post(ebPvOutputRequest);
+
+
+        //verify
+        EBResponse ebResponse = ebPvOutputRequest.response;
+        assertTrue(ebResponse instanceof EBResponseOK);
+        EBResponseOK  ebResponseOk = (EBResponseOK) ebResponse;
+        assertEquals(ebResponseOk.data, "off");
+
+    }
+
+    @Test
+    public void shouldLoadStatusOn() throws Exception {
+
+        //Setup
+
+        EventBus eventBus = new EventBus();
+        PvOutputNew pvOutput = new PvOutputNew(tempPvOutputFile, eventBus);
+        pvOutput.start();
+        Thread.sleep(300);
+
+        Map requestStatus = new HashMap<>();
+        requestStatus.put("opcode", "status");
+        EBPvOutputRequest ebPvOutputRequest = new EBPvOutputRequest(requestStatus);
+        eventBus.post(ebPvOutputRequest);
+
+
+        //verify
+        EBResponse ebResponse = ebPvOutputRequest.response;
+        assertTrue(ebResponse instanceof EBResponseOK);
+        EBResponseOK  ebResponseOk = (EBResponseOK) ebResponse;
+        assertEquals(ebResponseOk.data,"on");
+
+    }
 
     @Test
     public void shouldPublishCorrectAveragedData() throws InterruptedException, ConfigurationException, IOException {
@@ -230,13 +271,13 @@ public class TestResponses {
         PeriodicInverterTelemetries inverterTelemetries3 = new PeriodicInverterTelemetries();
 
         long now = new Date().getTime();
-        inverterTelemetries1.setTimestamp(now-2000);
+        inverterTelemetries1.setTimestamp(now - 2000);
         inverterTelemetries1.cumulatedEnergy = 3;
         inverterTelemetries1.gridPowerAll = 3;
         inverterTelemetries1.gridVoltageAll = 3;
         inverterTelemetries1.inverterTemp = 3;
 
-        inverterTelemetries2.setTimestamp(now-1000);
+        inverterTelemetries2.setTimestamp(now - 1000);
         inverterTelemetries2.cumulatedEnergy = 5;
         inverterTelemetries2.gridPowerAll = 5;
         inverterTelemetries2.gridVoltageAll = 5;
@@ -256,7 +297,7 @@ public class TestResponses {
         eventBus.post(inverterTelemetries1);  //save configuration data
 
         //verify
-        Thread.sleep((long) ((pvOutputParams.timeWindowSec+1)*1000));
+        Thread.sleep((long) ((pvOutputParams.timeWindowSec + 1) * 1000));
         String publishedData1 = fakePVOutputServer.pollLastRequest();
         String publishedData2 = fakePVOutputServer.pollLastRequest();
         String publishedData3 = fakePVOutputServer.pollLastRequest();
@@ -266,36 +307,33 @@ public class TestResponses {
         PeriodicInverterTelemetries expectedTelemetries1 = new PeriodicInverterTelemetries();
         expectedTelemetries1.setTimestamp(now);
         expectedTelemetries1.cumulatedEnergy = 7;
-        expectedTelemetries1.gridPowerAll = (3+5+7)/3;
-        expectedTelemetries1.gridVoltageAll = (3+5+7)/3;
-        expectedTelemetries1.inverterTemp = (3+5+7)/3;
+        expectedTelemetries1.gridPowerAll = (3 + 5 + 7) / 3;
+        expectedTelemetries1.gridVoltageAll = (3 + 5 + 7) / 3;
+        expectedTelemetries1.inverterTemp = (3 + 5 + 7) / 3;
 
         PeriodicInverterTelemetries expectedTelemetries2 = new PeriodicInverterTelemetries();
         expectedTelemetries2.setTimestamp(now);
         expectedTelemetries2.cumulatedEnergy = 7;
-        expectedTelemetries2.gridPowerAll = (5+7)/2;
-        expectedTelemetries2.gridVoltageAll = (5+7)/2;
-        expectedTelemetries2.inverterTemp = (5+7)/2;
+        expectedTelemetries2.gridPowerAll = (5 + 7) / 2;
+        expectedTelemetries2.gridVoltageAll = (5 + 7) / 2;
+        expectedTelemetries2.inverterTemp = (5 + 7) / 2;
 
         PeriodicInverterTelemetries expectedTelemetries3 = new PeriodicInverterTelemetries();
         expectedTelemetries3.setTimestamp(now);
         expectedTelemetries3.cumulatedEnergy = 7;
         expectedTelemetries3.gridPowerAll = 7;
-        expectedTelemetries3.gridVoltageAll =7;
+        expectedTelemetries3.gridVoltageAll = 7;
         expectedTelemetries3.inverterTemp = 7;
 
-        assertTelemetriesEquals(expectedTelemetries1,publishedData1);
-        assertTelemetriesEquals(expectedTelemetries2,publishedData2);
-        assertTelemetriesEquals(expectedTelemetries3,publishedData3);
+        assertTelemetriesEquals(expectedTelemetries1, publishedData1);
+        assertTelemetriesEquals(expectedTelemetries2, publishedData2);
+        assertTelemetriesEquals(expectedTelemetries3, publishedData3);
         junit.framework.Assert.assertNull(publishedData4);
-
-
 
 
     }
 
-    public void assertTelemetriesEquals(PeriodicInverterTelemetries telemetries, String httpString)
-    {
+    public void assertTelemetriesEquals(PeriodicInverterTelemetries telemetries, String httpString) {
         Map<String, String> queryMap = HttpUtils.getQueryMap(httpString);
 
         Double dailyEnergy = Double.parseDouble(queryMap.get("v1"));

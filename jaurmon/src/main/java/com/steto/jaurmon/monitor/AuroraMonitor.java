@@ -17,7 +17,6 @@ import com.steto.jaurlib.response.ResponseErrorEnum;
 import com.steto.jaurmon.monitor.cmd.MonCmdReadStatus;
 import com.steto.jaurmon.monitor.cmd.MonReqLoadInvSettings;
 import com.steto.jaurmon.monitor.cmd.MonReqSaveInvSettings;
-import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
 import com.steto.jaurmon.monitor.pvoutput.PvOutputNew;
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
 import jssc.SerialPortException;
@@ -37,10 +36,11 @@ import java.util.logging.Logger;
 public class AuroraMonitor {
 
 
+    private static final long INVERTER_QUERY_PERIOD_MS = 30000;
     private final EventBus theEventBus;
     private String pvOutputDataDirectoryPath;
-    protected PVOutputParams pvOutputParams;
     protected HwSettings hwSettings;
+    protected MonitorSettings settings;
     public int pvOutputHttpRequestTimeout = 10000;
 
 
@@ -69,9 +69,11 @@ public class AuroraMonitor {
         lastCheckDate = new Date();
 
         hwSettings = loadHwSettings();
+        settings = loadSettings();
 
-        pvOutputParams = pvOutputParams == null ? new PVOutputParams() : pvOutputParams;
+
         hwSettings = hwSettings == null ? new HwSettings() : hwSettings;
+        settings = settings == null ? new MonitorSettings() : settings;
 
         mapEnergyCmd.put("daily", AuroraCumEnergyEnum.DAILY);
         mapEnergyCmd.put("weekly", AuroraCumEnergyEnum.WEEKLY);
@@ -194,6 +196,24 @@ public class AuroraMonitor {
         return result;
     }
 
+    protected MonitorSettings loadSettings() throws Exception {
+
+        MonitorSettings result = new MonitorSettings();
+
+        try {
+            HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
+            SubnodeConfiguration inverterParams = iniConfObj.getSection("monitor");
+
+            result.inverterInterrogationPeriodSec = inverterParams.getFloat("inverterInterrogationPeriodSec");
+        } catch (Exception e) {
+            String errMsg = "Error reading file: " + configurationFileName + ", " + e.getMessage();
+//            log.severe("Error reading file: " + configurationFileName + ", " + e.getMessage());
+            throw new Exception(errMsg);
+        }
+
+        return result;
+    }
+
 
     public void saveHwSettingsConfiguration() throws IOException, ConfigurationException {
 
@@ -208,6 +228,15 @@ public class AuroraMonitor {
 
     }
 
+    public void saveConfiguration() throws IOException, ConfigurationException {
+
+        HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
+        iniConfObj.setProperty("monitor.inverterInterrogationPeriodSec", settings.inverterInterrogationPeriodSec);
+
+        iniConfObj.save();
+
+
+    }
 
     private Map<String, Object> getSettingsMap() {
         Map<String, Object> result = new HashMap();
@@ -296,41 +325,12 @@ public class AuroraMonitor {
         hwSettings.inverterAddress = aInverterAddress;
     }
 
+    public void setInverterInterrogationPeriod(float inverterQueryPeriodSec) {
+        settings.inverterInterrogationPeriodSec = inverterQueryPeriodSec;
+    }
 
-    public boolean acquireDataToBePublishedOld(PeriodicInverterTelemetries periodicInverterTelemetries) {
-
-        boolean result = true;
-        AuroraResponse response = null;
-        try {
-            log.info("Starting data acquisition from inverter");
-            response = auroraDriver.acquireCumulatedEnergy(hwSettings.inverterAddress, AuroraCumEnergyEnum.DAILY);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            periodicInverterTelemetries.cumulatedEnergy = response.getLongParam();
-
-            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_POWER_ALL);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            periodicInverterTelemetries.gridPowerAll = response.getFloatParam();
-
-            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            periodicInverterTelemetries.gridVoltageAll = response.getFloatParam();
-
-            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            periodicInverterTelemetries.inverterTemp = response.getFloatParam();
-
-            log.info("data acquisition from inverter completed");
-        } catch (Exception e) {
-            result = false;
-            String errMsg = "Data acquisition failed: " + e.getMessage();
-            if (response != null) {
-                errMsg += ", Error Code: " + response.getErrorCode();
-            }
-            log.severe(errMsg);
-        }
-
-        return result;
-
+    public float getInverterInterrogationPeriod() {
+        return settings.inverterInterrogationPeriodSec;
     }
 
 
@@ -376,15 +376,18 @@ public class AuroraMonitor {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                PeriodicInverterTelemetries telemetries = new PeriodicInverterTelemetries();
-                acquireDataToBePublished(telemetries);
-                theEventBus.post(telemetries);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                while (true) {
+                    try {
+                        PeriodicInverterTelemetries telemetries = new PeriodicInverterTelemetries();
+                        acquireDataToBePublished(telemetries);
+                        theEventBus.post(telemetries);
+                        long time2wait = (long) (settings.inverterInterrogationPeriodSec*1000);
+                        Thread.sleep(time2wait);
+                    } catch (InterruptedException e) {
+                        log.severe(e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
-
             }
         }).start();
 
@@ -488,7 +491,7 @@ public class AuroraMonitor {
             EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus, auroraDriver, new InverterCommandFactory());
             auroraMonitor.init();
             auroraMonitor.start();
-            PvOutputNew pvOutput = new PvOutputNew(configurationFileName,theEventBus);
+            PvOutputNew pvOutput = new PvOutputNew(configurationFileName, theEventBus);
             pvOutput.start();
 
             log.info("Creating Web Server...");

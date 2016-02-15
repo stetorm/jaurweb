@@ -1,4 +1,4 @@
-package com.steto.jaurmon.monitor.core.integration.pvoutput;
+package com.steto.jaurmon.monitor.pvoutput.integration;
 
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurmon.monitor.*;
