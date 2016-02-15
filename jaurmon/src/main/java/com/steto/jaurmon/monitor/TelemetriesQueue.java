@@ -1,12 +1,12 @@
 package com.steto.jaurmon.monitor;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by stefano on 07/02/16.
  */
 public class TelemetriesQueue {
+    float cumulatedEnergy = 0;
     List<PeriodicInverterTelemetries> dataList = new ArrayList<PeriodicInverterTelemetries>();
 
     protected static Comparator<PeriodicInverterTelemetries> Timestamp = new Comparator<PeriodicInverterTelemetries>() {
@@ -21,6 +21,7 @@ public class TelemetriesQueue {
 
         dataList.add(inverterTelemetries1);
         Collections.sort(dataList, Timestamp);
+
     }
 
     public PeriodicInverterTelemetries average() {
@@ -39,7 +40,7 @@ public class TelemetriesQueue {
                 result.inverterTemp += telemetry.inverterTemp;
             }
         }
-        if (count==0)
+        if (count == 0)
             return null;
 
         result.gridPowerAll /= count;
@@ -52,10 +53,41 @@ public class TelemetriesQueue {
         return result;
     }
 
+    public PeriodicInverterTelemetries fixedAverage() {
+        PeriodicInverterTelemetries result = average(0);
+        if (cumulatedEnergy == 0 && dataList.size() >0 && dataList.get(dataList.size() - 1).cumulatedEnergy == 0) {
+            float estimatedEnergy = estimateEnergy();
+            cumulatedEnergy += estimatedEnergy;
+            result.cumulatedEnergy = cumulatedEnergy;
+
+        }
+        return result;
+    }
+
+    private float estimateEnergy() {
+
+        float energy = 0;
+
+        if (dataList.size() > 0) {
+            for (int i = 1; i < dataList.size(); i++) {
+                float powMed = (float) ((dataList.get(i).gridPowerAll + dataList.get(i - 1).gridPowerAll)/2.0);
+                float deltaT = (float) ((dataList.get(i).timestamp - dataList.get(i - 1).timestamp) / 1000.0);
+                energy += powMed * deltaT;
+            }
+        }
+
+        return energy;
+    }
+
     public void removeOlderThan(long timestamp) {
         ListIterator<PeriodicInverterTelemetries> iterator = dataList.listIterator();
         while (iterator.hasNext() && iterator.next().timestamp < timestamp) {
             iterator.remove();
         }
+    }
+
+    public void reset() {
+        cumulatedEnergy=0;
+        dataList.clear();
     }
 }

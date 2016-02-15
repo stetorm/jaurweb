@@ -372,7 +372,6 @@
     function sendPvOutputTestCommand() {
         var urlString = '/pvoutput?opcode=test';
 
-
         console.log('urlString ' + urlString);
         console.log("PVoutput test executed");
 
@@ -381,21 +380,32 @@
     }
 
     function sendSaveCfgCommand() {
-        var urlString = '/cmd/saveCfg?';
+        var urlString = '/pvoutput';
 
         var cmdMap = {};
-        cmdMap["pvOutputApiKey"] = $("#txtAPIkey").val();
-        cmdMap["pvOutputSystemId"] = $("#txtSystemId").val();
-        cmdMap["pvOutputUrl"] = $("#txtPVoutUrl").val();
+        cmdMap["opcode"] = "save";
+        cmdMap["apiKey"] = $("#txtAPIkey").val();
+        cmdMap["systemId"] = $("#txtSystemId").val();
+        cmdMap["url"] = $("#txtPVoutUrl").val();
+        cmdMap["period"] = "300";
+        cmdMap["timeWindowSec"] = "300";
 
-        urlString = urlString + $.param(cmdMap);
+        urlString = urlString + "?"+$.param(cmdMap);
         console.log('urlString ' + urlString);
         console.log("PVoutput settings saved");
 
         $.get(urlString, function (msg, status) {
+            var jsonResponse = JSON.parse(msg);
 
-            console.log("Response received: " + msg);
-            console.log("Executed command: " + urlString + " with response: " + status);
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var responseBody = jsonResponse.data;
+                console.log("Received  response: "+responseBody)
+
+
+            }
 
         });
 

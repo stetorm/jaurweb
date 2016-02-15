@@ -42,7 +42,7 @@ public class PvOutputNew {
     private boolean running = false;
     TelemetriesQueue telemetriesQueue = new TelemetriesQueue();
     private int HTTP_REQUEST_TIMEOUT = 10000;
-    private boolean isInverterOnline=true;
+    private boolean isInverterOnline = true;
 
     public PvOutputNew(String aFileName, EventBus aEventBus) {
         theEventBus = aEventBus;
@@ -94,7 +94,7 @@ public class PvOutputNew {
     @Subscribe
     public void handle(MonitorMsgInverterStatus msg) {
 
-         isInverterOnline = msg.isOnline;
+        isInverterOnline = msg.isOnline;
     }
 
 
@@ -146,14 +146,14 @@ public class PvOutputNew {
     }
 
 
-    protected EBResponse handleStatusRequest(Map paramsMap) {
+    protected EBResponse handleStatusRequest(Map<String, String> paramsMap) {
 
         String status = running ? "on" : "off";
         return new EBResponseOK(status);
 
     }
 
-    protected EBResponse handleTestRequest(Map paramsMap) {
+    protected EBResponse handleTestRequest(Map<String, String> paramsMap) {
 
         EBResponse result;
         try {
@@ -167,7 +167,7 @@ public class PvOutputNew {
 
     }
 
-    protected EBResponse handleStartRequest(Map paramsMap) {
+    protected EBResponse handleStartRequest(Map<String, String> paramsMap) {
 
         EBResponse result;
         try {
@@ -183,7 +183,7 @@ public class PvOutputNew {
 
     }
 
-    protected EBResponse handleStopRequest(Map paramsMap) {
+    protected EBResponse handleStopRequest(Map<String, String> paramsMap) {
 
         stop();
         return new EBResponseOK("");
@@ -191,19 +191,19 @@ public class PvOutputNew {
     }
 
 
-    protected EBResponse handleReadRequest(Map paramsMap) {
+    protected EBResponse handleReadRequest(Map<String, String> paramsMap) {
         return new EBResponseOK(params);
     }
 
-    protected EBResponse handleSaveRequest(Map paramsMap) {
+    protected EBResponse handleSaveRequest(Map<String, String> paramsMap) {
         EBResponse result = new EBResponseNOK();
         try {
             PVOutputParams newParams = new PVOutputParams();
-            newParams.apiKey = (String) paramsMap.get("apiKey");
-            newParams.url = (String) paramsMap.get("url");
-            newParams.systemId = (int) paramsMap.get("systemId");
-            newParams.period = (float) paramsMap.get("period");
-            newParams.timeWindowSec = (float) paramsMap.get("timeWindowSec");
+            newParams.apiKey = paramsMap.get("apiKey");
+            newParams.url = paramsMap.get("url");
+            newParams.systemId = Integer.parseInt(paramsMap.get("systemId"));
+            newParams.period = Float.parseFloat(paramsMap.get("period"));
+            newParams.timeWindowSec = Float.parseFloat(paramsMap.get("timeWindowSec"));
             saveParams(newParams);
             params = newParams;
             result = new EBResponseOK("");
@@ -283,14 +283,13 @@ public class PvOutputNew {
                     Long now = new Date().getTime();
                     Long since = now - WINDOW_MS;
                     telemetriesQueue.removeOlderThan(since);
-                    PeriodicInverterTelemetries dataPublished = telemetriesQueue.average();
+                    PeriodicInverterTelemetries dataPublished = telemetriesQueue.fixedAverage();
                     if (dataPublished != null) {
                         publish2PvOutput(dataPublished);
                     } else {
                         log.fine("No data available for publication");
                     }
-                }
-                else {
+                } else {
                     log.info("Inverter is not online, examining data backup files");
                     String pvOutputFileData = MyUtils.selectFirstFile(pvOutputDataDirectoryPath, ".csv");
                     if (pvOutputFileData.isEmpty()) {
@@ -408,6 +407,7 @@ public class PvOutputNew {
                 requestUrl = generatePvOutputBatchUpdateUrl(data);
                 URL obj = new URL(requestUrl);
                 HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+                // TODO Inserire timeout per il socker come per l'update singolo
                 // optional default is GET
                 con.setConnectTimeout(5000);
                 con.setReadTimeout(5000);

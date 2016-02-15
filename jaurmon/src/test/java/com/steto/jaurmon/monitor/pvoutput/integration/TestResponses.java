@@ -99,9 +99,9 @@ public class TestResponses {
         requestSaveMap.put("opcode", "save");
         requestSaveMap.put("url", pvOutputParams2Save.url);
         requestSaveMap.put("apiKey", pvOutputParams2Save.apiKey);
-        requestSaveMap.put("systemId", pvOutputParams2Save.systemId);
-        requestSaveMap.put("period", pvOutputParams2Save.period);
-        requestSaveMap.put("timeWindowSec", pvOutputParams2Save.timeWindowSec);
+        requestSaveMap.put("systemId", ""+pvOutputParams2Save.systemId);
+        requestSaveMap.put("period", ""+pvOutputParams2Save.period);
+        requestSaveMap.put("timeWindowSec", ""+pvOutputParams2Save.timeWindowSec);
         EBPvOutputRequest ebPvOutputRequestSave = new EBPvOutputRequest(requestSaveMap);
 
         Map requestReadMap = new HashMap<>();
@@ -292,9 +292,9 @@ public class TestResponses {
         //Exercise
         pvOutput.start();
         Thread.sleep(500);
-        eventBus.post(inverterTelemetries3);  //save configuration data
-        eventBus.post(inverterTelemetries2);  //save configuration data
-        eventBus.post(inverterTelemetries1);  //save configuration data
+        eventBus.post(inverterTelemetries3);
+        eventBus.post(inverterTelemetries2);
+        eventBus.post(inverterTelemetries1);
 
         //verify
         Thread.sleep((long) ((pvOutputParams.timeWindowSec + 1) * 1000));

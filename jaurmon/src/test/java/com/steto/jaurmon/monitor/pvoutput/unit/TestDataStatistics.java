@@ -51,6 +51,49 @@ public class TestDataStatistics {
     }
 
     @Test
+    public void shouldFixAverageWhenZeroEnergy() {
+        inverterTelemetries1.cumulatedEnergy = 0;
+        inverterTelemetries2.cumulatedEnergy = 0;
+        inverterTelemetries3.cumulatedEnergy = 0;
+
+        PeriodicInverterTelemetries media = telemetriesQueue.fixedAverage();
+
+        float deltaT1 = (float) ((inverterTelemetries2.timestamp - inverterTelemetries1.timestamp) / 1000.0);
+        float deltaT2 = (float) ((inverterTelemetries3.timestamp - inverterTelemetries2.timestamp) / 1000.0);
+        float estimatedEnergy = (5 + 3) / 2 * deltaT1 + (7 + 5) / 2 * deltaT2;
+        assertEquals(media.gridPowerAll, (3 + 5 + 7) / 3, 0.00001);
+        assertEquals(media.cumulatedEnergy, estimatedEnergy, 0.01);
+        assertEquals(media.gridVoltageAll, (3 + 5 + 7) / 3, 0.00001);
+        assertEquals(media.inverterTemp, (3 + 5 + 7) / 3, 0.00001);
+        assertEquals(media.timestamp, 300, 0.00001);
+
+    }
+
+    @Test
+    public void shouldResetAverage() {
+
+        inverterTelemetries1.cumulatedEnergy = 0;
+        inverterTelemetries2.cumulatedEnergy = 0;
+        inverterTelemetries3.cumulatedEnergy = 0;
+
+        PeriodicInverterTelemetries fixedMedia1 = telemetriesQueue.fixedAverage();
+
+        telemetriesQueue.reset();
+
+        telemetriesQueue.add(inverterTelemetries1);
+        telemetriesQueue.add(inverterTelemetries2);
+        telemetriesQueue.add(inverterTelemetries3);
+
+        PeriodicInverterTelemetries fixedMedia2 = telemetriesQueue.fixedAverage();
+
+        assertEquals(fixedMedia1.gridPowerAll, fixedMedia2.gridVoltageAll, 0.00001);
+        assertEquals(fixedMedia1.cumulatedEnergy, fixedMedia2.cumulatedEnergy, 0.00001);
+        assertEquals(fixedMedia1.inverterTemp, fixedMedia2.inverterTemp, 0.00001);
+        assertEquals(fixedMedia1.timestamp, fixedMedia2.timestamp, 0.00001);
+
+    }
+
+    @Test
     public void shouldComputeAverage() {
 
         PeriodicInverterTelemetries media = telemetriesQueue.average();
@@ -61,6 +104,19 @@ public class TestDataStatistics {
         assertEquals(media.inverterTemp, (3 + 5 + 7) / 3, 0.00001);
         assertEquals(media.timestamp, 300, 0.00001);
 
+
+    }
+
+    @Test
+    public void shouldNotFixAverage() {
+
+        PeriodicInverterTelemetries media = telemetriesQueue.average();
+        PeriodicInverterTelemetries fixedMedia = telemetriesQueue.fixedAverage();
+
+        assertEquals(media.gridPowerAll, fixedMedia.gridVoltageAll, 0.00001);
+        assertEquals(media.cumulatedEnergy, fixedMedia.cumulatedEnergy, 0.00001);
+        assertEquals(media.inverterTemp, fixedMedia.inverterTemp, 0.00001);
+        assertEquals(media.timestamp, fixedMedia.timestamp, 0.00001);
 
     }
 
@@ -88,7 +144,7 @@ public class TestDataStatistics {
         assertEquals(average200.cumulatedEnergy, averageAll.cumulatedEnergy, 0.00001);
         assertEquals(average200.gridVoltageAll, averageAll.gridVoltageAll, 0.00001);
         assertEquals(average200.inverterTemp, averageAll.inverterTemp, 0.00001);
-        assertEquals(average200.timestamp,averageAll.timestamp, 0.00001);
+        assertEquals(average200.timestamp, averageAll.timestamp, 0.00001);
 
     }
 

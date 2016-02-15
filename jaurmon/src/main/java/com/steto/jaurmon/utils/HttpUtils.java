@@ -58,7 +58,7 @@ public class HttpUtils {
     public static Map<String, String> getQueryMap(String query)
     {
         String[] params = query.split("&");
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = new HashMap<>();
         for (String param : params)
         {
             if(param.split("=").length==2) {
