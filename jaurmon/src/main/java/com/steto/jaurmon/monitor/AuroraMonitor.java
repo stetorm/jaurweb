@@ -148,8 +148,7 @@ public class AuroraMonitor {
             updateInverterStatus(response.getErrorCode());
 
             long actualPower = (long) response.getFloatParam();
-            // TODO Substitute 12345 with the time span
-            dailyCumulatedEnergy = cumulatedEnergy == 0 ? dailyCumulatedEnergy + (actualPower + allPowerGeneration) * 12345 / (2 * 60 * 60) : cumulatedEnergy;
+            dailyCumulatedEnergy = cumulatedEnergy ;
             allPowerGeneration = actualPower;
             response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
             result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
@@ -337,9 +336,9 @@ public class AuroraMonitor {
     public float acquireInverterMeasure(String cmdCode, String cmdOpCode) {
 
         float measure = 0;
-        EBInverterRequest EBInverterRequest = new EBInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
-        theEventBus.post(EBInverterRequest);
-        EBResponseOK ebResponse = (EBResponseOK) EBInverterRequest.getResponse();
+        EBInverterRequest ebInverterRequest = new EBInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
+        theEventBus.post(ebInverterRequest);
+        EBResponseOK ebResponse = (EBResponseOK) ebInverterRequest.getResponse();
         measure = Float.parseFloat((String) ebResponse.data);
         return measure;
 
