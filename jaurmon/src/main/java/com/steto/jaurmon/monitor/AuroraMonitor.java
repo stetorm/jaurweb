@@ -1,6 +1,5 @@
 package com.steto.jaurmon.monitor;
 
-import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
@@ -23,6 +22,7 @@ import jssc.SerialPortException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.eclipse.jetty.security.MappedLoginService;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
+
+import static com.steto.jaurlib.response.ResponseErrorEnum.*;
 
 
 public class AuroraMonitor {
@@ -138,25 +140,25 @@ public class AuroraMonitor {
         try {
             log.info("Starting data acquisition from inverter");
             response = auroraDriver.acquireCumulatedEnergy(hwSettings.inverterAddress, AuroraCumEnergyEnum.DAILY);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            result = result && (response.getErrorCode() == NONE);
             updateInverterStatus(response.getErrorCode());
 
             long cumulatedEnergy = response.getLongParam();
 
             response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_POWER_ALL);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            result = result && (response.getErrorCode() == NONE);
             updateInverterStatus(response.getErrorCode());
 
             long actualPower = (long) response.getFloatParam();
-            dailyCumulatedEnergy = cumulatedEnergy ;
+            dailyCumulatedEnergy = cumulatedEnergy;
             allPowerGeneration = actualPower;
             response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            result = result && (response.getErrorCode() == NONE);
             updateInverterStatus(response.getErrorCode());
             allGridVoltage = response.getFloatParam();
 
             response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
+            result = result && (response.getErrorCode() == NONE);
             updateInverterStatus(response.getErrorCode());
             inverterTemperature = response.getFloatParam();
 
@@ -249,7 +251,7 @@ public class AuroraMonitor {
     public void checkInverterStatus() {
 
         AuroraResponse badResult = new AResp_VersionId();
-        badResult.setErrorCode(ResponseErrorEnum.UNKNOWN);
+        badResult.setErrorCode(UNKNOWN);
 
         AuroraResponse result;
         try {
@@ -268,7 +270,7 @@ public class AuroraMonitor {
 
     private void updateInverterStatus(ResponseErrorEnum acquisitionOutcome) {
 
-        boolean correct = (acquisitionOutcome == ResponseErrorEnum.NONE);
+        boolean correct = (acquisitionOutcome == NONE);
         switch (inverterStatus) {
             case OFFLINE:
                 inverterStatus = correct ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
@@ -333,37 +335,42 @@ public class AuroraMonitor {
     }
 
 
-    public float acquireInverterMeasure(String cmdCode, String cmdOpCode) {
+    public float acquireInverterMeasure(String cmdCode, String cmdOpCode) throws InverterTimeoutException, InverterCRCException {
 
         float measure = 0;
         EBInverterRequest ebInverterRequest = new EBInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
         theEventBus.post(ebInverterRequest);
-        EBResponseOK ebResponse = (EBResponseOK) ebInverterRequest.getResponse();
-        measure = Float.parseFloat((String) ebResponse.data);
-        return measure;
+        if (ebInverterRequest.getResponse() instanceof EBResponseOK) {
+            EBResponseOK ebResponse = (EBResponseOK) ebInverterRequest.getResponse();
+            measure = Float.parseFloat((String) ebResponse.data);
+            return measure;
+        } else {
+            EBResponseNOK ebResponseNOK = (EBResponseNOK) ebInverterRequest.getResponse();
+            ResponseErrorEnum error = fromCode(ebResponseNOK.error.code);
+
+            throw new InverterCRCException();
+
+
+        }
 
     }
 
-    public boolean acquireDataToBePublished(PeriodicInverterTelemetries periodicInverterTelemetries) {
+    public boolean acquireDataToBePublished(PeriodicInverterTelemetries periodicInverterTelemetries) throws InverterCRCException, InverterTimeoutException {
 
         boolean result = true;
-        try {
-            log.info("Starting data acquisition from inverter");
-            periodicInverterTelemetries.cumulatedEnergy = acquireInverterMeasure("cumEnergy", "daily");
+        log.info("Starting data acquisition from inverter");
+        periodicInverterTelemetries.cumulatedEnergy = acquireInverterMeasure("cumEnergy", "daily");
 
-            periodicInverterTelemetries.gridPowerAll = acquireInverterMeasure("dspData", "gridPowerAll");
+        periodicInverterTelemetries.gridPowerAll = acquireInverterMeasure("dspData", "gridPowerAll");
 
-            periodicInverterTelemetries.gridVoltageAll = acquireInverterMeasure("dspData", "gridVoltageAll");
+        periodicInverterTelemetries.gridVoltageAll = acquireInverterMeasure("dspData", "gridVoltageAll");
 
-            periodicInverterTelemetries.inverterTemp = acquireInverterMeasure("dspData", "inverterTemp");
+        periodicInverterTelemetries.inverterTemp = acquireInverterMeasure("dspData", "inverterTemp");
 
 
-            log.info("data acquisition from inverter completed");
-        } catch (Exception e) {
-            result = false;
-            String errMsg = "Data acquisition failed: " + e.getMessage();
-            log.severe(errMsg);
-        }
+        log.info("data acquisition from inverter completed");
+
+
 
         return result;
 
@@ -379,13 +386,32 @@ public class AuroraMonitor {
                     try {
                         PeriodicInverterTelemetries telemetries = new PeriodicInverterTelemetries();
                         acquireDataToBePublished(telemetries);
+                        updateInverterStatus(NONE);
                         theEventBus.post(telemetries);
-                        long time2wait = (long) (settings.inverterInterrogationPeriodSec*1000);
-                        Thread.sleep(time2wait);
-                    } catch (InterruptedException e) {
-                        log.severe(e.getMessage());
+                    } catch (InverterCRCException e) {
+                        updateInverterStatus(TIMEOUT);
+                    } catch (InverterTimeoutException e) {
+                        updateInverterStatus(CRC);
                         e.printStackTrace();
                     }
+                    finally {
+                        try {
+                            long time2wait = (long) (settings.inverterInterrogationPeriodSec * 1000);
+                            switch (inverterStatus)
+                            {
+                                case ONLINE:
+                                    theEventBus.post(new MonitorMsgInverterStatus(true));
+                                    break;
+                                case OFFLINE:
+                                    theEventBus.post(new MonitorMsgInverterStatus(false));
+                                    break;
+                            }
+                            Thread.sleep(time2wait);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                 }
             }
         }).start();
@@ -393,7 +419,7 @@ public class AuroraMonitor {
     }
 
     @Subscribe
-    @AllowConcurrentEvents
+
     public void handle(MonReqSaveInvSettings cmd) {
 
         EBResponse ebResponse = null;
@@ -421,7 +447,7 @@ public class AuroraMonitor {
     }
 
     @Subscribe
-    @AllowConcurrentEvents
+
     public void handle(MonReqLoadInvSettings cmd) {
 
         EBResponse ebResponse = null;
@@ -442,7 +468,6 @@ public class AuroraMonitor {
     }
 
     @Subscribe
-    @AllowConcurrentEvents
     public void execCommand(MonCmdReadStatus cmd) {
         EBResponse ebResponse = null;
 
