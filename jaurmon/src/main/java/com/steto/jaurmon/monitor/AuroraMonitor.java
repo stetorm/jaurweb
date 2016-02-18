@@ -23,6 +23,7 @@ import jssc.SerialPortException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.omg.CORBA.TIMEOUT;
 
 import java.io.File;
 import java.io.IOException;
@@ -338,9 +339,24 @@ public class AuroraMonitor {
         float measure = 0;
         EBInverterRequest ebInverterRequest = new EBInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
         theEventBus.post(ebInverterRequest);
-        EBResponseOK ebResponse = (EBResponseOK) ebInverterRequest.getResponse();
-        measure = Float.parseFloat((String) ebResponse.data);
-        return measure;
+        if (ebInverterRequest.getResponse() instanceof EBResponseOK) {
+            EBResponseOK ebResponse = (EBResponseOK) ebInverterRequest.getResponse();
+            measure = Float.parseFloat((String) ebResponse.data);
+            return measure;
+        }
+        else
+        {
+            EBResponseNOK ebResponseNOK = (EBResponseNOK) ebInverterRequest.getResponse();
+            ResponseErrorEnum error = ResponseErrorEnum.fromCode(ebResponseNOK.error.code);
+            switch (error) {
+                case ResponseErrorEnum.TIMEOUT:
+                    break;
+                case ResponseErrorEnum.CRC:
+                    break;
+                case ResponseErrorEnum.NONE:
+                    break;
+            }
+        }
 
     }
 
@@ -382,7 +398,11 @@ public class AuroraMonitor {
                         theEventBus.post(telemetries);
                         long time2wait = (long) (settings.inverterInterrogationPeriodSec*1000);
                         Thread.sleep(time2wait);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InverterTimeoutException e) {
+
+                    }
+                    catch (InterruptedException e) {
                         log.severe(e.getMessage());
                         e.printStackTrace();
                     }
