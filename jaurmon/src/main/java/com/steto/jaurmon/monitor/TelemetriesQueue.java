@@ -86,9 +86,10 @@ public class TelemetriesQueue {
             for (int i = 1; i < dataList.size(); i++) {
                 float powMed = (float) ((dataList.get(i).gridPowerAll + dataList.get(i - 1).gridPowerAll) / 2.0);
                 float deltaT = (float) ((dataList.get(i).timestamp - dataList.get(i - 1).timestamp) / 1000.0);
-                float partialEnergy = powMed * deltaT;
+                float deltaHours = (float) (deltaT/ 3600.0);
+                float partialEnergy = powMed * deltaHours;
                 energy += partialEnergy;
-                log.finer("partial energy: " + partialEnergy + ", powMed: " + powMed + ", deltaT: " + deltaT);
+                log.finer("partial energy: " + partialEnergy + ", powMed: " + powMed + ", deltaHours: " + deltaHours);
             }
         }
 

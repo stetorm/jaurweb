@@ -185,7 +185,7 @@ public class TestInverterDataAcquisitionEngine {
 
         int NUM_OF_TELEMETRIES = 3;
 
-        float gridPowerAll = (float) 100;
+        float gridPowerAll = (float) 1000;
         float gridVoltageAll = (float) 221.5;
         float inverterTemperature = (float) 27.4;
         Float cumulatedEnergy = (float) 0;
@@ -221,7 +221,7 @@ public class TestInverterDataAcquisitionEngine {
 
 
         // Verify
-        float expectedCumulatedEnergy = (gridPowerAll * inverterInterrPeriod) * 2;
+        float expectedCumulatedEnergy = (gridPowerAll * inverterInterrPeriod) * 2 /3600;
         assertEquals(NUM_OF_TELEMETRIES, telemetriesReceiver.counter);
         assertEquals(inverterInterrPeriod * 1000, telemetriesReceiver.deltaTmsec, 20);
         assertEquals(gridPowerAll, telemetriesReceiver.telemetries.gridPowerAll, 0.0001);

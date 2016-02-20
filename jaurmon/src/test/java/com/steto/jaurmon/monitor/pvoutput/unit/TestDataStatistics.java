@@ -107,8 +107,8 @@ public class TestDataStatistics {
         PeriodicInverterTelemetries media = telemetriesQueue.fixedAverage();
 
         // Verify
-        float deltaT1 = (float) ((inverterTelemetries2.timestamp - inverterTelemetries1.timestamp) / 1000.0);
-        float deltaT2 = (float) ((inverterTelemetries3.timestamp - inverterTelemetries2.timestamp) / 1000.0);
+        float deltaT1 = (float) ((inverterTelemetries2.timestamp - inverterTelemetries1.timestamp) / 3600000.0);
+        float deltaT2 = (float) ((inverterTelemetries3.timestamp - inverterTelemetries2.timestamp) / 3600000.0);
 
         float estimatedEnergy = (5 + 3) / 2 * deltaT1 + (7 + 5) / 2 * deltaT2;
 

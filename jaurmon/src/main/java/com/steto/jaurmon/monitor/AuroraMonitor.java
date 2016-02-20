@@ -345,7 +345,7 @@ public class AuroraMonitor {
                             PeriodicInverterTelemetries fixedTelemetries = telemetriesQueue.fixedAverage();
                             dailyCumulatedEnergy += fixedTelemetries.cumulatedEnergy;
                             telemetries.cumulatedEnergy = dailyCumulatedEnergy;
-                            log.info("Fixed Energy calculation, last one: " + fixedTelemetries.cumulatedEnergy + ", day total: " + dailyCumulatedEnergy);
+                            log.info("Fixed Energy calculation, last one: " + fixedTelemetries.cumulatedEnergy + ",  (Wh): " + dailyCumulatedEnergy);
                         }
 
                         theEventBus.post(telemetries);
@@ -478,7 +478,7 @@ public class AuroraMonitor {
             pvOutput.start();
 
             log.info("Creating Web Server...");
-            AuroraWebServer auroraWebServer = new AuroraWebServer(8080, webDirectoryPath, theEventBus);
+            AuroraWebServer auroraWebServer = new AuroraWebServer(8000, webDirectoryPath, theEventBus);
             log.info("Starting Web Server...");
             new Thread(auroraWebServer).start();
             Thread.sleep(1000);
