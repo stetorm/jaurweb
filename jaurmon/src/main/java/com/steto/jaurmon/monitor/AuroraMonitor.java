@@ -304,18 +304,22 @@ public class AuroraMonitor {
 
     public PeriodicInverterTelemetries acquireDataToBePublished() throws InverterCRCException, InverterTimeoutException {
 
-        PeriodicInverterTelemetries result = new PeriodicInverterTelemetries();
         log.info("Starting data acquisition from inverter");
-        result.cumulatedEnergy = acquireInverterMeasure("cumEnergy", "daily");
+
+        PeriodicInverterTelemetries result = new PeriodicInverterTelemetries();
 
         result.gridPowerAll = acquireInverterMeasure("dspData", "gridPowerAll");
+
+        result.cumulatedEnergy = acquireInverterMeasure("cumEnergy", "daily");
 
         result.gridVoltageAll = acquireInverterMeasure("dspData", "gridVoltageAll");
 
         result.inverterTemp = acquireInverterMeasure("dspData", "inverterTemp");
 
 
-        log.info("data acquisition from inverter completed: " + result);
+        float deltaT = new Date().getTime() - result.timestamp;
+        deltaT /= 1000;
+        log.info("Data acquisition from inverter completed in " + deltaT + " sec: " + result);
 
 
         return result;
