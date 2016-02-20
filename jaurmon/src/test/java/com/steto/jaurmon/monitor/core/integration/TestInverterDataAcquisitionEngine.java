@@ -177,6 +177,61 @@ public class TestInverterDataAcquisitionEngine {
 
     }
 
+    @Test
+    public void shouldProvideFixedTelemetries() throws Exception {
+
+
+        final Object waitVar = new Object();
+
+        int NUM_OF_TELEMETRIES = 3;
+
+        float gridPowerAll = (float) 100;
+        float gridVoltageAll = (float) 221.5;
+        float inverterTemperature = (float) 27.4;
+        Float cumulatedEnergy = (float) 0;
+        float inverterInterrPeriod = (float) 0.5;
+
+
+        AResp_CumulatedEnergy cumulateEnergyResponse = new AResp_CumulatedEnergy();
+        AResp_DspData responseGridPowerAll = new AResp_DspData();
+        AResp_DspData responseGridVoltageAll = new AResp_DspData();
+        AResp_DspData respInverterTemperature = new AResp_DspData();
+
+        cumulateEnergyResponse.setLongParam(cumulatedEnergy.longValue());
+        responseGridPowerAll.setFloatParam(gridPowerAll);
+        responseGridVoltageAll.setFloatParam(gridVoltageAll);
+        respInverterTemperature.setFloatParam(inverterTemperature);
+
+        when(auroraDriver.acquireCumulatedEnergy(eq(hwSettings.inverterAddress), eq(AuroraCumEnergyEnum.DAILY))).thenReturn(cumulateEnergyResponse);
+        when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.GRID_POWER_ALL))).thenReturn(responseGridPowerAll);
+        when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.GRID_VOLTAGE_ALL))).thenReturn(responseGridVoltageAll);
+        when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED))).thenReturn(respInverterTemperature);
+
+        TelemetriesReceiver telemetriesReceiver = new TelemetriesReceiver(NUM_OF_TELEMETRIES, waitVar);
+        theEventBus.register(telemetriesReceiver);
+
+        // Exercise
+        auroraMonitor.setInverterInterrogationPeriod(inverterInterrPeriod);
+        auroraMonitor.setDailyCumulatedEnergyFixing(true);
+        auroraMonitor.start();
+
+        synchronized (waitVar) {
+            waitVar.wait(2000);
+        }
+
+
+        // Verify
+        float expectedCumulatedEnergy = (gridPowerAll * inverterInterrPeriod) * 2;
+        assertEquals(NUM_OF_TELEMETRIES, telemetriesReceiver.counter);
+        assertEquals(inverterInterrPeriod * 1000, telemetriesReceiver.deltaTmsec, 20);
+        assertEquals(gridPowerAll, telemetriesReceiver.telemetries.gridPowerAll, 0.0001);
+        assertEquals(gridVoltageAll, telemetriesReceiver.telemetries.gridVoltageAll, 0.0001);
+        assertEquals(inverterTemperature, telemetriesReceiver.telemetries.inverterTemp, 0.0001);
+        assertEquals(expectedCumulatedEnergy, telemetriesReceiver.telemetries.cumulatedEnergy, 5);
+
+
+    }
+
 
     @Test
     public void shouldProvideInverterStatus() throws Exception {
