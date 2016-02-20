@@ -89,7 +89,7 @@ public class TelemetriesQueue {
                 float deltaHours = (float) (deltaT/ 3600.0);
                 float partialEnergy = powMed * deltaHours;
                 energy += partialEnergy;
-                log.finer("partial energy: " + partialEnergy + ", powMed: " + powMed + ", deltaHours: " + deltaHours);
+                log.finer("partial energy (Wh): " + partialEnergy + ", powMed: " + powMed + ", deltaT: " + deltaT);
             }
         }
 
