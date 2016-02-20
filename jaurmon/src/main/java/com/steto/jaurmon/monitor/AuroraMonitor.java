@@ -18,6 +18,7 @@ import com.steto.jaurmon.monitor.cmd.MonReqLoadInvSettings;
 import com.steto.jaurmon.monitor.cmd.MonReqSaveInvSettings;
 import com.steto.jaurmon.monitor.pvoutput.PvOutputNew;
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
+import com.steto.jaurmon.utils.MyUtils;
 import jssc.SerialPortException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
@@ -346,6 +347,13 @@ public class AuroraMonitor {
             public void run() {
                 while (true) {
                     try {
+                        Date actualDate = new Date();
+                        if (!MyUtils.sameDay(actualDate, lastCheckDate)) {
+                            dailyCumulatedEnergy = 0;
+                            log.info("It's a new day: Cumulated Energy RESET!");
+                        }
+                        lastCheckDate = actualDate;
+
                         PeriodicInverterTelemetries telemetries = acquireDataToBePublished();
                         updateInverterStatus(NONE);
                         if (fixEnergyCalcution) {
