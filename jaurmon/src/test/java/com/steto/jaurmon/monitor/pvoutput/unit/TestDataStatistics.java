@@ -99,15 +99,14 @@ public class TestDataStatistics {
 
 
     @Test
-    public void shouldFixAverageWhenZeroEnergy() {
+    public void shouldFixAverage() {
 
-        inverterTelemetries1.cumulatedEnergy = 0;
-        inverterTelemetries2.cumulatedEnergy = 0;
-        inverterTelemetries3.cumulatedEnergy = 0;
 
+        // Exercise
         PeriodicInverterTelemetries media0 = telemetriesQueue.fixedAverage();
         PeriodicInverterTelemetries media = telemetriesQueue.fixedAverage();
 
+        // Verify
         float deltaT1 = (float) ((inverterTelemetries2.timestamp - inverterTelemetries1.timestamp) / 1000.0);
         float deltaT2 = (float) ((inverterTelemetries3.timestamp - inverterTelemetries2.timestamp) / 1000.0);
 
@@ -142,18 +141,6 @@ public class TestDataStatistics {
 
     }
 
-    @Test
-    public void shouldNotFixAverage() {
-
-        PeriodicInverterTelemetries media = telemetriesQueue.average();
-        PeriodicInverterTelemetries fixedMedia = telemetriesQueue.fixedAverage();
-
-        assertEquals(media.gridPowerAll, fixedMedia.gridVoltageAll, 0.00001);
-        assertEquals(media.cumulatedEnergy, fixedMedia.cumulatedEnergy, 0.00001);
-        assertEquals(media.inverterTemp, fixedMedia.inverterTemp, 0.00001);
-        assertEquals(media.timestamp, fixedMedia.timestamp, 0.00001);
-
-    }
 
     @Test
     public void shouldComputeAverageSince() {
