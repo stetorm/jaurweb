@@ -25,7 +25,7 @@ public class TelemetriesQueue {
     }
 
     public TelemetriesQueue() {
-        this(100);
+        this(1000);
     }
 
     public void add(PeriodicInverterTelemetries inverterTelemetries1) {
@@ -106,5 +106,9 @@ public class TelemetriesQueue {
 
     public int length() {
         return dataList.size();
+    }
+
+    public void clear() {
+        dataList.clear();
     }
 }

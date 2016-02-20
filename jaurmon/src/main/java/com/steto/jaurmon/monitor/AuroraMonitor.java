@@ -6,8 +6,6 @@ import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
 import com.steto.jaurlib.eventbus.*;
-import com.steto.jaurlib.request.AuroraCumEnergyEnum;
-import com.steto.jaurlib.request.AuroraDspRequestEnum;
 import com.steto.jaurlib.request.AuroraRequestFactory;
 import com.steto.jaurlib.response.AResp_VersionId;
 import com.steto.jaurlib.response.AuroraResponse;
@@ -38,25 +36,16 @@ import static com.steto.jaurlib.response.ResponseErrorEnum.*;
 public class AuroraMonitor {
 
 
-    private static final long INVERTER_QUERY_PERIOD_MS = 30000;
     private final EventBus theEventBus;
-    private String pvOutputDataDirectoryPath;
     protected HwSettings hwSettings;
     protected MonitorSettings settings;
-    public int pvOutputHttpRequestTimeout = 10000;
     TelemetriesQueue telemetriesQueue = new TelemetriesQueue(2);
 
 
     private final String configurationFileName;
     protected Logger log = Logger.getLogger(getClass().getSimpleName());
     protected float dailyCumulatedEnergy = 0;
-    protected long allPowerGeneration = 0;
-    protected double inverterTemperature = 0;
-    protected double allGridVoltage = 0;
     protected final AuroraDriver auroraDriver;
-    private ScheduledFuture<?> pvOutputFeature;
-    Map<String, AuroraCumEnergyEnum> mapEnergyCmd = new HashMap<String, AuroraCumEnergyEnum>();
-    Map<String, AuroraDspRequestEnum> mapDspCmd = new HashMap<String, AuroraDspRequestEnum>();
     private InverterStatusEnum inverterStatus = InverterStatusEnum.OFFLINE;
     private boolean pvOutputRunning = false;
     private Date lastCheckDate;
@@ -67,7 +56,6 @@ public class AuroraMonitor {
         this.auroraDriver = auroraDriver;
 
         this.configurationFileName = configFile;
-        this.pvOutputDataDirectoryPath = dataLogDirPath;
 
         lastCheckDate = new Date();
 
@@ -78,24 +66,6 @@ public class AuroraMonitor {
         hwSettings = hwSettings == null ? new HwSettings() : hwSettings;
         settings = settings == null ? new MonitorSettings() : settings;
 
-        mapEnergyCmd.put("daily", AuroraCumEnergyEnum.DAILY);
-        mapEnergyCmd.put("weekly", AuroraCumEnergyEnum.WEEKLY);
-        mapEnergyCmd.put("monthly", AuroraCumEnergyEnum.MONTHLY);
-        mapEnergyCmd.put("yearly", AuroraCumEnergyEnum.YEARLY);
-        mapEnergyCmd.put("last7days", AuroraCumEnergyEnum.LAST7DAYS);
-        mapEnergyCmd.put("partial", AuroraCumEnergyEnum.PARTIAL);
-        mapEnergyCmd.put("total", AuroraCumEnergyEnum.TOTAL);
-
-        mapDspCmd.put("freqAll", AuroraDspRequestEnum.FREQUENCY_ALL);
-        mapDspCmd.put("gridVoltageAll", AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
-        mapDspCmd.put("gridCurrentAll", AuroraDspRequestEnum.GRID_CURRENT_ALL);
-        mapDspCmd.put("gridPowerAll", AuroraDspRequestEnum.GRID_POWER_ALL);
-        mapDspCmd.put("input1Voltage", AuroraDspRequestEnum.INPUT_1_VOLTAGE);
-        mapDspCmd.put("input1Current", AuroraDspRequestEnum.INPUT_1_CURRENT);
-        mapDspCmd.put("input2Voltage", AuroraDspRequestEnum.INPUT_2_VOLTAGE);
-        mapDspCmd.put("input2Current", AuroraDspRequestEnum.INPUT_2_CURRENT);
-        mapDspCmd.put("inverterTemp", AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
-        mapDspCmd.put("boosterTemp", AuroraDspRequestEnum.BOOSTER_TEMPERATURE_GRID_TIED);
 
         theEventBus.register(this);
 
@@ -337,6 +307,7 @@ public class AuroraMonitor {
                         Date actualDate = new Date();
                         if (!MyUtils.sameDay(actualDate, lastCheckDate)) {
                             dailyCumulatedEnergy = 0;
+                            telemetriesQueue.clear();
                             log.info("It's a new day: Cumulated Energy RESET!");
                         }
                         lastCheckDate = actualDate;
