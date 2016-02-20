@@ -53,6 +53,7 @@ public class TestConfigurationFile {
         int inverterAddress=21;
         int baudRate=9600;
         float inverterQueryPeriodSec = (float) 30.5;
+        boolean enableEnergyEstimation = true;
 
         HwSettings hwSettings = new HwSettings();
         hwSettings.serialPort = serialPort;
@@ -61,6 +62,7 @@ public class TestConfigurationFile {
 
         MonitorSettings monitorSettings = new MonitorSettings();
         monitorSettings.inverterInterrogationPeriodSec = inverterQueryPeriodSec;
+        monitorSettings.energyEstimationEnable = enableEnergyEstimation;
 
         createAuroraConfigFile(fileName, RandomObjectGenerator.getA_HwSettings(), RandomObjectGenerator.getA_MonitorSettings());
 
@@ -71,6 +73,7 @@ public class TestConfigurationFile {
         auroraMonitorSave.setSerialPortBaudRate(baudRate);
         auroraMonitorSave.setSerialPortName(serialPort);
         auroraMonitorSave.setInverterInterrogationPeriod(inverterQueryPeriodSec);
+        auroraMonitorSave.setDailyCumulatedEnergyEstimationFeature(enableEnergyEstimation);
 
         auroraMonitorSave.saveHwSettingsConfiguration();
         auroraMonitorSave.saveConfiguration();
@@ -83,6 +86,7 @@ public class TestConfigurationFile {
         assertEquals(inverterAddress,auroraMonitorLoad.getInverterAddress());
         assertEquals(baudRate,auroraMonitorLoad.getSerialPortBaudRate());
         assertEquals(inverterQueryPeriodSec,auroraMonitorLoad.getInverterInterrogationPeriod(), 0.0001);
+        assertEquals(enableEnergyEstimation,auroraMonitorLoad.getDailyCumulatedEnergyEstimationFeature());
 
 
     }

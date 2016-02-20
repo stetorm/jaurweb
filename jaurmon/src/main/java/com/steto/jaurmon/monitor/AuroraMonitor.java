@@ -60,7 +60,6 @@ public class AuroraMonitor {
     private InverterStatusEnum inverterStatus = InverterStatusEnum.OFFLINE;
     private boolean pvOutputRunning = false;
     private Date lastCheckDate;
-    private boolean fixEnergyCalcution = false;
 
     public AuroraMonitor(EventBus aEventBus, AuroraDriver auroraDriver, String configFile, String dataLogDirPath) throws Exception {
 
@@ -119,24 +118,6 @@ public class AuroraMonitor {
     }
 
 
-    public float getCumulatedEnergyReadout() {
-        return dailyCumulatedEnergy;
-    }
-
-    public long getInstantPowerReadout() {
-        return allPowerGeneration;
-    }
-
-    public Double getVoltageReadout() {
-        return allGridVoltage;
-    }
-
-    public Double getTemperatureReadout() {
-
-        return inverterTemperature;
-    }
-
-
     protected HwSettings loadHwSettings() throws Exception {
 
         HwSettings result = new HwSettings();
@@ -166,6 +147,7 @@ public class AuroraMonitor {
             SubnodeConfiguration inverterParams = iniConfObj.getSection("monitor");
 
             result.inverterInterrogationPeriodSec = inverterParams.getFloat("inverterInterrogationPeriodSec");
+            result.energyEstimationEnable = inverterParams.getBoolean("energyEstimationEnable");
         } catch (Exception e) {
             String errMsg = "Error reading file: " + configurationFileName + ", " + e.getMessage();
 //            log.severe("Error reading file: " + configurationFileName + ", " + e.getMessage());
@@ -193,6 +175,7 @@ public class AuroraMonitor {
 
         HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
         iniConfObj.setProperty("monitor.inverterInterrogationPeriodSec", settings.inverterInterrogationPeriodSec);
+        iniConfObj.setProperty("monitor.energyEstimationEnable", settings.energyEstimationEnable);
 
         iniConfObj.save();
 
@@ -290,8 +273,8 @@ public class AuroraMonitor {
         settings.inverterInterrogationPeriodSec = inverterQueryPeriodSec;
     }
 
-    public void setDailyCumulatedEnergyFixing(boolean value) {
-        fixEnergyCalcution = value;
+    public void setDailyCumulatedEnergyEstimationFeature(boolean value) {
+        settings.energyEstimationEnable = value;
     }
 
     public float getInverterInterrogationPeriod() {
@@ -356,7 +339,7 @@ public class AuroraMonitor {
 
                         PeriodicInverterTelemetries telemetries = acquireDataToBePublished();
                         updateInverterStatus(NONE);
-                        if (fixEnergyCalcution) {
+                        if (settings.energyEstimationEnable) {
                             // fix energy calcutation when 0
                             telemetriesQueue.add(telemetries);
                             PeriodicInverterTelemetries fixedTelemetries = telemetriesQueue.fixedAverage();
@@ -506,6 +489,9 @@ public class AuroraMonitor {
 
     }
 
+    public boolean getDailyCumulatedEnergyEstimationFeature() {
+        return settings.energyEstimationEnable;
+    }
 }
 
 

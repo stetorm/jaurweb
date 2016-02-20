@@ -9,4 +9,5 @@ public class MonitorSettings {
 
 
     public float inverterInterrogationPeriodSec;
+    public boolean energyEstimationEnable;
 }

@@ -212,7 +212,7 @@ public class TestInverterDataAcquisitionEngine {
 
         // Exercise
         auroraMonitor.setInverterInterrogationPeriod(inverterInterrPeriod);
-        auroraMonitor.setDailyCumulatedEnergyFixing(true);
+        auroraMonitor.setDailyCumulatedEnergyEstimationFeature(true);
         auroraMonitor.start();
 
         synchronized (waitVar) {
