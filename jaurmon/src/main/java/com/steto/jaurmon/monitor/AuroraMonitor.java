@@ -317,7 +317,7 @@ public class AuroraMonitor {
                         telemetriesQueue.add(telemetries);
                         PeriodicInverterTelemetries fixedTelemetries = telemetriesQueue.fixedAverage();
                         dailyCumulatedEnergy += fixedTelemetries.cumulatedEnergy;
-                        log.info("Energy Estimation, Measured: " + telemetries.cumulatedEnergy + ", Estimated: " + dailyCumulatedEnergy + ", difference: " + (telemetries.cumulatedEnergy - dailyCumulatedEnergy));
+                        log.info("Energy Estimation (Wh), Measured: " + telemetries.cumulatedEnergy + ", Estimated: " + dailyCumulatedEnergy + ", difference: " + (telemetries.cumulatedEnergy - dailyCumulatedEnergy));
                         if (settings.energyEstimationEnable) {
                             log.info("Fixed Energy calculation, Last One: " + fixedTelemetries.cumulatedEnergy + ", Day Total: " + dailyCumulatedEnergy);
                             telemetries.cumulatedEnergy = dailyCumulatedEnergy;

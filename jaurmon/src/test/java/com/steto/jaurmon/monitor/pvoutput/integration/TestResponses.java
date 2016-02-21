@@ -169,7 +169,7 @@ public class TestResponses {
         eventBus.post(ebPvOutputRequest);
         Thread.sleep(500);
         eventBus.post(inverterTelemetries1);
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
 
         //verify
