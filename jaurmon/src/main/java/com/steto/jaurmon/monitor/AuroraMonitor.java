@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
 import static com.steto.jaurlib.response.ResponseErrorEnum.*;
@@ -314,13 +313,14 @@ public class AuroraMonitor {
 
                         PeriodicInverterTelemetries telemetries = acquireDataToBePublished();
                         updateInverterStatus(NONE);
+                        // fix energy calcutation when 0
+                        telemetriesQueue.add(telemetries);
+                        PeriodicInverterTelemetries fixedTelemetries = telemetriesQueue.fixedAverage();
+                        dailyCumulatedEnergy += fixedTelemetries.cumulatedEnergy;
+                        log.info("Energy Estimation, Measured: " + telemetries.cumulatedEnergy + ", Estimated: " + dailyCumulatedEnergy + ", difference: " + (telemetries.cumulatedEnergy - dailyCumulatedEnergy));
                         if (settings.energyEstimationEnable) {
-                            // fix energy calcutation when 0
-                            telemetriesQueue.add(telemetries);
-                            PeriodicInverterTelemetries fixedTelemetries = telemetriesQueue.fixedAverage();
-                            dailyCumulatedEnergy += fixedTelemetries.cumulatedEnergy;
+                            log.info("Fixed Energy calculation, Last One: " + fixedTelemetries.cumulatedEnergy + ", Day Total: " + dailyCumulatedEnergy);
                             telemetries.cumulatedEnergy = dailyCumulatedEnergy;
-                            log.info("Fixed Energy calculation, last one: " + fixedTelemetries.cumulatedEnergy + ",  (Wh): " + dailyCumulatedEnergy);
                         }
 
                         theEventBus.post(telemetries);
