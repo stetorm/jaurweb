@@ -30,8 +30,7 @@ public class TelemetriesQueue {
 
     public void add(PeriodicInverterTelemetries inverterTelemetries1) {
 
-        if (dataList.size()>=maxDim)
-        {
+        if (dataList.size() >= maxDim) {
             dataList.remove(0);
         }
         dataList.add(inverterTelemetries1);
@@ -45,10 +44,12 @@ public class TelemetriesQueue {
     }
 
     public PeriodicInverterTelemetries average(long sinceTime) {
+        log.info("Averaging telemetries since: " + new Date(sinceTime)) ;
         PeriodicInverterTelemetries result = new PeriodicInverterTelemetries();
         int count = 0;
         for (PeriodicInverterTelemetries telemetry : dataList) {
             if (telemetry.timestamp >= sinceTime) {
+                log.fine("Adding telemetry "+telemetry);
                 count++;
                 result.gridPowerAll += telemetry.gridPowerAll;
                 result.gridVoltageAll += telemetry.gridVoltageAll;
@@ -65,12 +66,13 @@ public class TelemetriesQueue {
         result.timestamp = dataList.get(dataList.size() - 1).timestamp;
         result.cumulatedEnergy = dataList.get(dataList.size() - 1).cumulatedEnergy;
 
+        log.fine("Average result of "+count+" telemetries:" + result);
         return result;
     }
 
     public PeriodicInverterTelemetries fixedAverage() {
         PeriodicInverterTelemetries result = average(0);
-        if (dataList.size() > 0 ) {
+        if (dataList.size() > 0) {
             float estimatedEnergy = estimateEnergy();
             result.cumulatedEnergy = estimatedEnergy;
 
@@ -86,7 +88,7 @@ public class TelemetriesQueue {
             for (int i = 1; i < dataList.size(); i++) {
                 float powMed = (float) ((dataList.get(i).gridPowerAll + dataList.get(i - 1).gridPowerAll) / 2.0);
                 float deltaT = (float) ((dataList.get(i).timestamp - dataList.get(i - 1).timestamp) / 1000.0);
-                float deltaHours = (float) (deltaT/ 3600.0);
+                float deltaHours = (float) (deltaT / 3600.0);
                 float partialEnergy = powMed * deltaHours;
                 energy += partialEnergy;
                 log.finer("partial energy (Wh): " + partialEnergy + ", powMed: " + powMed + ", deltaT: " + deltaT);
@@ -98,9 +100,15 @@ public class TelemetriesQueue {
     }
 
     public void removeOlderThan(long timestamp) {
+        log.fine("Discarding telemetries since: "+new Date(timestamp));
         ListIterator<PeriodicInverterTelemetries> iterator = dataList.listIterator();
-        while (iterator.hasNext() && iterator.next().timestamp < timestamp) {
-            iterator.remove();
+//        while (iterator.hasNext() && iterator.next().timestamp < timestamp) {
+        while (iterator.hasNext()) {
+            PeriodicInverterTelemetries telem = iterator.next();
+            if (telem.timestamp < timestamp) {
+                log.fine("Telemetry discarded: " + telem);
+                iterator.remove();
+            }
         }
     }
 
