@@ -20,7 +20,8 @@ public class PeriodicInverterTelemetries {
     @Override
     public String toString() {
         return "PeriodicInverterTelemetries{" +
-                "timestamp=" + timestamp +
+                "date=" + new Date(timestamp) +
+                ", timestamp=" + timestamp +
                 ", cumulatedEnergy=" + cumulatedEnergy +
                 ", gridPowerAll=" + gridPowerAll +
                 ", gridVoltageAll=" + gridVoltageAll +

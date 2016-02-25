@@ -1,14 +1,11 @@
 package com.steto.jaurmon.monitor;
 
-import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurlib.cmd.InverterCommandFactory;
 import com.steto.jaurlib.eventbus.*;
-import com.steto.jaurlib.request.AuroraCumEnergyEnum;
-import com.steto.jaurlib.request.AuroraDspRequestEnum;
 import com.steto.jaurlib.request.AuroraRequestFactory;
 import com.steto.jaurlib.response.AResp_VersionId;
 import com.steto.jaurlib.response.AuroraResponse;
@@ -19,42 +16,35 @@ import com.steto.jaurmon.monitor.cmd.MonReqLoadInvSettings;
 import com.steto.jaurmon.monitor.cmd.MonReqSaveInvSettings;
 import com.steto.jaurmon.monitor.pvoutput.PvOutputNew;
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
+import com.steto.jaurmon.utils.MyUtils;
 import jssc.SerialPortException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
-import org.omg.CORBA.TIMEOUT;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
+
+import static com.steto.jaurlib.response.ResponseErrorEnum.*;
 
 
 public class AuroraMonitor {
 
 
-    private static final long INVERTER_QUERY_PERIOD_MS = 30000;
     private final EventBus theEventBus;
-    private String pvOutputDataDirectoryPath;
     protected HwSettings hwSettings;
     protected MonitorSettings settings;
-    public int pvOutputHttpRequestTimeout = 10000;
+    TelemetriesQueue telemetriesQueue = new TelemetriesQueue(2);
 
 
     private final String configurationFileName;
     protected Logger log = Logger.getLogger(getClass().getSimpleName());
     protected float dailyCumulatedEnergy = 0;
-    protected long allPowerGeneration = 0;
-    protected double inverterTemperature = 0;
-    protected double allGridVoltage = 0;
     protected final AuroraDriver auroraDriver;
-    private ScheduledFuture<?> pvOutputFeature;
-    Map<String, AuroraCumEnergyEnum> mapEnergyCmd = new HashMap<String, AuroraCumEnergyEnum>();
-    Map<String, AuroraDspRequestEnum> mapDspCmd = new HashMap<String, AuroraDspRequestEnum>();
     private InverterStatusEnum inverterStatus = InverterStatusEnum.OFFLINE;
     private boolean pvOutputRunning = false;
     private Date lastCheckDate;
@@ -65,7 +55,6 @@ public class AuroraMonitor {
         this.auroraDriver = auroraDriver;
 
         this.configurationFileName = configFile;
-        this.pvOutputDataDirectoryPath = dataLogDirPath;
 
         lastCheckDate = new Date();
 
@@ -76,24 +65,6 @@ public class AuroraMonitor {
         hwSettings = hwSettings == null ? new HwSettings() : hwSettings;
         settings = settings == null ? new MonitorSettings() : settings;
 
-        mapEnergyCmd.put("daily", AuroraCumEnergyEnum.DAILY);
-        mapEnergyCmd.put("weekly", AuroraCumEnergyEnum.WEEKLY);
-        mapEnergyCmd.put("monthly", AuroraCumEnergyEnum.MONTHLY);
-        mapEnergyCmd.put("yearly", AuroraCumEnergyEnum.YEARLY);
-        mapEnergyCmd.put("last7days", AuroraCumEnergyEnum.LAST7DAYS);
-        mapEnergyCmd.put("partial", AuroraCumEnergyEnum.PARTIAL);
-        mapEnergyCmd.put("total", AuroraCumEnergyEnum.TOTAL);
-
-        mapDspCmd.put("freqAll", AuroraDspRequestEnum.FREQUENCY_ALL);
-        mapDspCmd.put("gridVoltageAll", AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
-        mapDspCmd.put("gridCurrentAll", AuroraDspRequestEnum.GRID_CURRENT_ALL);
-        mapDspCmd.put("gridPowerAll", AuroraDspRequestEnum.GRID_POWER_ALL);
-        mapDspCmd.put("input1Voltage", AuroraDspRequestEnum.INPUT_1_VOLTAGE);
-        mapDspCmd.put("input1Current", AuroraDspRequestEnum.INPUT_1_CURRENT);
-        mapDspCmd.put("input2Voltage", AuroraDspRequestEnum.INPUT_2_VOLTAGE);
-        mapDspCmd.put("input2Current", AuroraDspRequestEnum.INPUT_2_CURRENT);
-        mapDspCmd.put("inverterTemp", AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
-        mapDspCmd.put("boosterTemp", AuroraDspRequestEnum.BOOSTER_TEMPERATURE_GRID_TIED);
 
         theEventBus.register(this);
 
@@ -115,66 +86,6 @@ public class AuroraMonitor {
         log.info("Serial Port initialized with values: " + serialPortName + ", " + serialPortBaudRate);
     }
 
-
-    public float getCumulatedEnergyReadout() {
-        return dailyCumulatedEnergy;
-    }
-
-    public long getInstantPowerReadout() {
-        return allPowerGeneration;
-    }
-
-    public Double getVoltageReadout() {
-        return allGridVoltage;
-    }
-
-    public Double getTemperatureReadout() {
-
-        return inverterTemperature;
-    }
-
-    public boolean acquireDataToBePublished() {
-        boolean result = true;
-        AuroraResponse response = null;
-        try {
-            log.info("Starting data acquisition from inverter");
-            response = auroraDriver.acquireCumulatedEnergy(hwSettings.inverterAddress, AuroraCumEnergyEnum.DAILY);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            updateInverterStatus(response.getErrorCode());
-
-            long cumulatedEnergy = response.getLongParam();
-
-            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_POWER_ALL);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            updateInverterStatus(response.getErrorCode());
-
-            long actualPower = (long) response.getFloatParam();
-            dailyCumulatedEnergy = cumulatedEnergy ;
-            allPowerGeneration = actualPower;
-            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            updateInverterStatus(response.getErrorCode());
-            allGridVoltage = response.getFloatParam();
-
-            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            updateInverterStatus(response.getErrorCode());
-            inverterTemperature = response.getFloatParam();
-
-            log.info("data acquisition from inverter completed");
-        } catch (Exception e) {
-            result = false;
-            String errMsg = "Data acquisition failed: " + e.getMessage();
-            if (response != null) {
-                errMsg += ", Error Code: " + response.getErrorCode();
-            }
-            log.severe(errMsg);
-        }
-
-
-        return result;
-
-    }
 
     protected HwSettings loadHwSettings() throws Exception {
 
@@ -205,6 +116,7 @@ public class AuroraMonitor {
             SubnodeConfiguration inverterParams = iniConfObj.getSection("monitor");
 
             result.inverterInterrogationPeriodSec = inverterParams.getFloat("inverterInterrogationPeriodSec");
+            result.energyEstimationEnable = inverterParams.getBoolean("energyEstimationEnable");
         } catch (Exception e) {
             String errMsg = "Error reading file: " + configurationFileName + ", " + e.getMessage();
 //            log.severe("Error reading file: " + configurationFileName + ", " + e.getMessage());
@@ -232,6 +144,7 @@ public class AuroraMonitor {
 
         HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
         iniConfObj.setProperty("monitor.inverterInterrogationPeriodSec", settings.inverterInterrogationPeriodSec);
+        iniConfObj.setProperty("monitor.energyEstimationEnable", settings.energyEstimationEnable);
 
         iniConfObj.save();
 
@@ -250,7 +163,7 @@ public class AuroraMonitor {
     public void checkInverterStatus() {
 
         AuroraResponse badResult = new AResp_VersionId();
-        badResult.setErrorCode(ResponseErrorEnum.UNKNOWN);
+        badResult.setErrorCode(UNKNOWN);
 
         AuroraResponse result;
         try {
@@ -269,7 +182,7 @@ public class AuroraMonitor {
 
     private void updateInverterStatus(ResponseErrorEnum acquisitionOutcome) {
 
-        boolean correct = (acquisitionOutcome == ResponseErrorEnum.NONE);
+        boolean correct = (acquisitionOutcome == NONE);
         switch (inverterStatus) {
             case OFFLINE:
                 inverterStatus = correct ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
@@ -329,12 +242,16 @@ public class AuroraMonitor {
         settings.inverterInterrogationPeriodSec = inverterQueryPeriodSec;
     }
 
+    public void setDailyCumulatedEnergyEstimationFeature(boolean value) {
+        settings.energyEstimationEnable = value;
+    }
+
     public float getInverterInterrogationPeriod() {
         return settings.inverterInterrogationPeriodSec;
     }
 
 
-    public float acquireInverterMeasure(String cmdCode, String cmdOpCode) {
+    public float acquireInverterMeasure(String cmdCode, String cmdOpCode) throws InverterTimeoutException, InverterCRCException {
 
         float measure = 0;
         EBInverterRequest ebInverterRequest = new EBInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
@@ -343,43 +260,36 @@ public class AuroraMonitor {
             EBResponseOK ebResponse = (EBResponseOK) ebInverterRequest.getResponse();
             measure = Float.parseFloat((String) ebResponse.data);
             return measure;
-        }
-        else
-        {
+        } else {
             EBResponseNOK ebResponseNOK = (EBResponseNOK) ebInverterRequest.getResponse();
-            ResponseErrorEnum error = ResponseErrorEnum.fromCode(ebResponseNOK.error.code);
-            switch (error) {
-                case ResponseErrorEnum.TIMEOUT:
-                    break;
-                case ResponseErrorEnum.CRC:
-                    break;
-                case ResponseErrorEnum.NONE:
-                    break;
-            }
+            ResponseErrorEnum error = fromCode(ebResponseNOK.error.code);
+
+            throw new InverterCRCException();
+
+
         }
 
     }
 
-    public boolean acquireDataToBePublished(PeriodicInverterTelemetries periodicInverterTelemetries) {
+    public PeriodicInverterTelemetries acquireDataToBePublished() throws InverterCRCException, InverterTimeoutException {
 
-        boolean result = true;
-        try {
-            log.info("Starting data acquisition from inverter");
-            periodicInverterTelemetries.cumulatedEnergy = acquireInverterMeasure("cumEnergy", "daily");
+        log.info("Starting data acquisition from inverter");
 
-            periodicInverterTelemetries.gridPowerAll = acquireInverterMeasure("dspData", "gridPowerAll");
+        PeriodicInverterTelemetries result = new PeriodicInverterTelemetries();
 
-            periodicInverterTelemetries.gridVoltageAll = acquireInverterMeasure("dspData", "gridVoltageAll");
+        result.gridPowerAll = acquireInverterMeasure("dspData", "gridPowerAll");
 
-            periodicInverterTelemetries.inverterTemp = acquireInverterMeasure("dspData", "inverterTemp");
+        result.cumulatedEnergy = acquireInverterMeasure("cumEnergy", "daily");
+
+        result.gridVoltageAll = acquireInverterMeasure("dspData", "gridVoltageAll");
+
+        result.inverterTemp = acquireInverterMeasure("dspData", "inverterTemp");
 
 
-            log.info("data acquisition from inverter completed");
-        } catch (Exception e) {
-            result = false;
-            String errMsg = "Data acquisition failed: " + e.getMessage();
-            log.severe(errMsg);
-        }
+        float deltaT = new Date().getTime() - result.timestamp;
+        deltaT /= 1000;
+        log.info("Data acquisition from inverter completed in " + deltaT + " sec: " + result);
+
 
         return result;
 
@@ -393,19 +303,49 @@ public class AuroraMonitor {
             public void run() {
                 while (true) {
                     try {
-                        PeriodicInverterTelemetries telemetries = new PeriodicInverterTelemetries();
-                        acquireDataToBePublished(telemetries);
-                        theEventBus.post(telemetries);
-                        long time2wait = (long) (settings.inverterInterrogationPeriodSec*1000);
-                        Thread.sleep(time2wait);
-                    }
-                    catch (InverterTimeoutException e) {
+                        Date actualDate = new Date();
+                        if (!MyUtils.sameDay(actualDate, lastCheckDate)) {
+                            dailyCumulatedEnergy = 0;
+                            telemetriesQueue.clear();
+                            log.info("It's a new day: Cumulated Energy RESET!");
+                        }
+                        lastCheckDate = actualDate;
 
-                    }
-                    catch (InterruptedException e) {
-                        log.severe(e.getMessage());
+                        PeriodicInverterTelemetries telemetries = acquireDataToBePublished();
+                        updateInverterStatus(NONE);
+                        // fix energy calcutation when 0
+                        telemetriesQueue.add(telemetries);
+                        PeriodicInverterTelemetries fixedTelemetries = telemetriesQueue.fixedAverage();
+                        dailyCumulatedEnergy += fixedTelemetries.cumulatedEnergy;
+                        log.info("Energy Estimation (Wh), Measured: " + telemetries.cumulatedEnergy + ", Estimated: " + dailyCumulatedEnergy + ", difference: " + (telemetries.cumulatedEnergy - dailyCumulatedEnergy));
+                        if (settings.energyEstimationEnable) {
+                            log.info("Fixed Energy calculation, Last One: " + fixedTelemetries.cumulatedEnergy + ", Day Total: " + dailyCumulatedEnergy);
+                            telemetries.cumulatedEnergy = dailyCumulatedEnergy;
+                        }
+
+                        theEventBus.post(telemetries);
+                    } catch (InverterCRCException e) {
+                        updateInverterStatus(TIMEOUT);
+                    } catch (InverterTimeoutException e) {
+                        updateInverterStatus(CRC);
                         e.printStackTrace();
+                    } finally {
+                        try {
+                            long time2wait = (long) (settings.inverterInterrogationPeriodSec * 1000);
+                            switch (inverterStatus) {
+                                case ONLINE:
+                                    theEventBus.post(new MonitorMsgInverterStatus(true));
+                                    break;
+                                case OFFLINE:
+                                    theEventBus.post(new MonitorMsgInverterStatus(false));
+                                    break;
+                            }
+                            Thread.sleep(time2wait);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
+
                 }
             }
         }).start();
@@ -413,7 +353,7 @@ public class AuroraMonitor {
     }
 
     @Subscribe
-    @AllowConcurrentEvents
+
     public void handle(MonReqSaveInvSettings cmd) {
 
         EBResponse ebResponse = null;
@@ -441,7 +381,7 @@ public class AuroraMonitor {
     }
 
     @Subscribe
-    @AllowConcurrentEvents
+
     public void handle(MonReqLoadInvSettings cmd) {
 
         EBResponse ebResponse = null;
@@ -462,7 +402,6 @@ public class AuroraMonitor {
     }
 
     @Subscribe
-    @AllowConcurrentEvents
     public void execCommand(MonCmdReadStatus cmd) {
         EBResponse ebResponse = null;
 
@@ -514,7 +453,7 @@ public class AuroraMonitor {
             pvOutput.start();
 
             log.info("Creating Web Server...");
-            AuroraWebServer auroraWebServer = new AuroraWebServer(8080, webDirectoryPath, theEventBus);
+            AuroraWebServer auroraWebServer = new AuroraWebServer(8000, webDirectoryPath, theEventBus);
             log.info("Starting Web Server...");
             new Thread(auroraWebServer).start();
             Thread.sleep(1000);
@@ -525,6 +464,9 @@ public class AuroraMonitor {
 
     }
 
+    public boolean getDailyCumulatedEnergyEstimationFeature() {
+        return settings.energyEstimationEnable;
+    }
 }
 
 

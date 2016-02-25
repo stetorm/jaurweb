@@ -40,11 +40,8 @@ public class TestInverterDataAcquisitionEngine {
         private final Object waitVar;
         private final int cardinality;
         public PeriodicInverterTelemetries telemetries;
-        public MonitorMsgInverterStatus inverterStatus;
-        public int telemCounter = 0;
-        long deltaTmsec =0;
-
-        public int monitorStatusMsgCounter = 0;
+        public int counter = 0;
+        long deltaTmsec = 0;
 
         public TelemetriesReceiver(int cardinality, Object waitVar) {
             this.waitVar = waitVar;
@@ -54,32 +51,41 @@ public class TestInverterDataAcquisitionEngine {
 
         @Subscribe
         public void handle(PeriodicInverterTelemetries msg) {
-            telemCounter++;
-            if (telemCounter ==1)
-            {
+            counter++;
+            if (counter == 1) {
                 deltaTmsec = new Date().getTime();
-            }
-            else
-            if (telemCounter ==2)
-            {
-                deltaTmsec =  new Date().getTime() - deltaTmsec;
+            } else if (counter == 2) {
+                deltaTmsec = new Date().getTime() - deltaTmsec;
             }
             telemetries = msg;
             synchronized (waitVar) {
-                if (telemCounter >= cardinality)
+                if (counter >= cardinality)
                     waitVar.notifyAll();
             }
         }
 
-        @Subscribe
-        public void handle(MonitorMsgInverterStatus msg) {
-            inverterStatus = msg;
-        }
-
-
     }
 
     ;
+
+    class MonitorMsgInverterStatusReceiver {
+
+        public MonitorMsgInverterStatus monitorStatusMsg;
+        public int counter = 0;
+        long deltaTmsec = 0;
+
+        public MonitorMsgInverterStatusReceiver() {
+        }
+
+
+        @Subscribe
+        public void handle(MonitorMsgInverterStatus msg) {
+            counter++;
+            monitorStatusMsg = msg;
+        }
+
+    }
+
 
     File resourcesDirectory = new File("src/test/resources");
 
@@ -161,8 +167,8 @@ public class TestInverterDataAcquisitionEngine {
 
 
         // Verify
-        assertEquals(NUM_OF_TELEMETRIES, telemetriesReceiver.telemCounter);
-        assertEquals(true, telemetriesReceiver.inverterStatus.isOnline);
+        assertEquals(NUM_OF_TELEMETRIES, telemetriesReceiver.counter);
+        assertEquals(inverterInterrPeriod * 1000, telemetriesReceiver.deltaTmsec, 20);
         assertEquals(gridPowerAll, telemetriesReceiver.telemetries.gridPowerAll, 0.0001);
         assertEquals(gridVoltageAll, telemetriesReceiver.telemetries.gridVoltageAll, 0.0001);
         assertEquals(inverterTemperature, telemetriesReceiver.telemetries.inverterTemp, 0.0001);
@@ -172,32 +178,29 @@ public class TestInverterDataAcquisitionEngine {
     }
 
     @Test
-    public void should() throws Exception {
+    public void shouldProvideFixedTelemetries() throws Exception {
 
 
         final Object waitVar = new Object();
 
-        int NUM_OF_TELEMETRIES = 1;
+        int NUM_OF_TELEMETRIES = 3;
 
-        float gridPowerAll = 0;
-        float gridVoltageAll = 0;
-        float inverterTemperature = 0;
-        float cumulatedEnergy = 0;
-        float inverterInterrPeriod = 0;
+        float gridPowerAll = (float) 1000;
+        float gridVoltageAll = (float) 221.5;
+        float inverterTemperature = (float) 27.4;
+        Float cumulatedEnergy = (float) 0;
+        float inverterInterrPeriod = (float) 0.5;
 
 
         AResp_CumulatedEnergy cumulateEnergyResponse = new AResp_CumulatedEnergy();
-        cumulateEnergyResponse.setErrorCode(ResponseErrorEnum.TIMEOUT);
-
         AResp_DspData responseGridPowerAll = new AResp_DspData();
-        responseGridPowerAll.setErrorCode(ResponseErrorEnum.TIMEOUT);
-
         AResp_DspData responseGridVoltageAll = new AResp_DspData();
-        responseGridVoltageAll.setErrorCode(ResponseErrorEnum.TIMEOUT);
-
         AResp_DspData respInverterTemperature = new AResp_DspData();
-        respInverterTemperature.setErrorCode(ResponseErrorEnum.TIMEOUT);
 
+        cumulateEnergyResponse.setLongParam(cumulatedEnergy.longValue());
+        responseGridPowerAll.setFloatParam(gridPowerAll);
+        responseGridVoltageAll.setFloatParam(gridVoltageAll);
+        respInverterTemperature.setFloatParam(inverterTemperature);
 
         when(auroraDriver.acquireCumulatedEnergy(eq(hwSettings.inverterAddress), eq(AuroraCumEnergyEnum.DAILY))).thenReturn(cumulateEnergyResponse);
         when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.GRID_POWER_ALL))).thenReturn(responseGridPowerAll);
@@ -209,6 +212,7 @@ public class TestInverterDataAcquisitionEngine {
 
         // Exercise
         auroraMonitor.setInverterInterrogationPeriod(inverterInterrPeriod);
+        auroraMonitor.setDailyCumulatedEnergyEstimationFeature(true);
         auroraMonitor.start();
 
         synchronized (waitVar) {
@@ -217,8 +221,120 @@ public class TestInverterDataAcquisitionEngine {
 
 
         // Verify
-        assertEquals(NUM_OF_TELEMETRIES, 0);
-        assertEquals(false, telemetriesReceiver.inverterStatus.isOnline);
+        float expectedCumulatedEnergy = (gridPowerAll * inverterInterrPeriod) * 2 /3600;
+        assertEquals(NUM_OF_TELEMETRIES, telemetriesReceiver.counter);
+        assertEquals(inverterInterrPeriod * 1000, telemetriesReceiver.deltaTmsec, 20);
+        assertEquals(gridPowerAll, telemetriesReceiver.telemetries.gridPowerAll, 0.0001);
+        assertEquals(gridVoltageAll, telemetriesReceiver.telemetries.gridVoltageAll, 0.0001);
+        assertEquals(inverterTemperature, telemetriesReceiver.telemetries.inverterTemp, 0.0001);
+        assertEquals(expectedCumulatedEnergy, telemetriesReceiver.telemetries.cumulatedEnergy, 5);
+
+
+    }
+
+
+    @Test
+    public void shouldProvideInverterStatus() throws Exception {
+
+
+        final Object waitVar = new Object();
+
+
+        float inverterInterrPeriod = (float) 0.5;
+
+
+        AResp_CumulatedEnergy cumulateEnergyResponse = new AResp_CumulatedEnergy();
+        cumulateEnergyResponse.setLongParam(0);
+        cumulateEnergyResponse.setErrorCode(ResponseErrorEnum.TIMEOUT);
+
+        AResp_DspData responseGridPowerAll = new AResp_DspData();
+        responseGridPowerAll.setFloatParam(0);
+        responseGridPowerAll.setErrorCode(ResponseErrorEnum.TIMEOUT);
+
+        AResp_DspData responseGridVoltageAll = new AResp_DspData();
+        responseGridVoltageAll.setFloatParam(0);
+        responseGridVoltageAll.setErrorCode(ResponseErrorEnum.TIMEOUT);
+
+        AResp_DspData respInverterTemperature = new AResp_DspData();
+        respInverterTemperature.setErrorCode(ResponseErrorEnum.TIMEOUT);
+        respInverterTemperature.setFloatParam(0);
+
+        when(auroraDriver.acquireCumulatedEnergy(eq(hwSettings.inverterAddress), eq(AuroraCumEnergyEnum.DAILY))).thenReturn(cumulateEnergyResponse);
+        when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.GRID_POWER_ALL))).thenReturn(responseGridPowerAll);
+        when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.GRID_VOLTAGE_ALL))).thenReturn(responseGridVoltageAll);
+        when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED))).thenReturn(respInverterTemperature);
+
+        MonitorMsgInverterStatusReceiver inverterStatusReceiver = new MonitorMsgInverterStatusReceiver();
+        TelemetriesReceiver telemetriesReceiver = new TelemetriesReceiver(1, waitVar);
+        theEventBus.register(telemetriesReceiver);
+        theEventBus.register(inverterStatusReceiver);
+
+        // Exercise
+        auroraMonitor.setInverterInterrogationPeriod(inverterInterrPeriod);
+        auroraMonitor.start();
+
+        synchronized (waitVar) {
+            waitVar.wait(1000);
+        }
+
+
+        // Verify
+        assertEquals(0, telemetriesReceiver.counter);
+        assertEquals(2, inverterStatusReceiver.counter);
+        assertEquals(false, inverterStatusReceiver.monitorStatusMsg.isOnline);
+
+
+    }
+
+    @Test
+    public void should() throws Exception {
+
+
+        final Object waitVar = new Object();
+
+
+        float inverterInterrPeriod = (float) 0.5;
+
+
+        AResp_CumulatedEnergy cumulateEnergyResponse = new AResp_CumulatedEnergy();
+        cumulateEnergyResponse.setLongParam(0);
+        cumulateEnergyResponse.setErrorCode(ResponseErrorEnum.TIMEOUT);
+
+        AResp_DspData responseGridPowerAll = new AResp_DspData();
+        responseGridPowerAll.setFloatParam(0);
+        responseGridPowerAll.setErrorCode(ResponseErrorEnum.TIMEOUT);
+
+        AResp_DspData responseGridVoltageAll = new AResp_DspData();
+        responseGridVoltageAll.setFloatParam(0);
+        responseGridVoltageAll.setErrorCode(ResponseErrorEnum.TIMEOUT);
+
+        AResp_DspData respInverterTemperature = new AResp_DspData();
+        respInverterTemperature.setErrorCode(ResponseErrorEnum.TIMEOUT);
+        respInverterTemperature.setFloatParam(0);
+
+        when(auroraDriver.acquireCumulatedEnergy(eq(hwSettings.inverterAddress), eq(AuroraCumEnergyEnum.DAILY))).thenReturn(cumulateEnergyResponse);
+        when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.GRID_POWER_ALL))).thenReturn(responseGridPowerAll);
+        when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.GRID_VOLTAGE_ALL))).thenReturn(responseGridVoltageAll);
+        when(auroraDriver.acquireDspValue(eq(hwSettings.inverterAddress), eq(AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED))).thenReturn(respInverterTemperature);
+
+        MonitorMsgInverterStatusReceiver inverterStatusReceiver = new MonitorMsgInverterStatusReceiver();
+        TelemetriesReceiver telemetriesReceiver = new TelemetriesReceiver(1, waitVar);
+        theEventBus.register(telemetriesReceiver);
+        theEventBus.register(inverterStatusReceiver);
+
+        // Exercise
+        auroraMonitor.setInverterInterrogationPeriod(inverterInterrPeriod);
+        auroraMonitor.start();
+
+        synchronized (waitVar) {
+            waitVar.wait(1000);
+        }
+
+
+        // Verify
+        assertEquals(0, telemetriesReceiver.counter);
+        assertEquals(2, inverterStatusReceiver.counter);
+        assertEquals(false, inverterStatusReceiver.monitorStatusMsg.isOnline);
 
 
     }

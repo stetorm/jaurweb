@@ -1,7 +1,9 @@
 package com.steto.jaurmon.monitor.core.integration;
 
+import com.google.common.eventbus.EventBus;
 import com.steto.jaurlib.AuroraDriver;
-import com.steto.jaurmon.monitor.AuroraMonitorTestImpl;
+import com.steto.jaurmon.monitor.AuroraMonitor;
+
 import com.steto.jaurmon.monitor.HwSettings;
 import com.steto.jaurmon.monitor.MonitorSettings;
 import com.steto.jaurmon.monitor.RandomObjectGenerator;
@@ -53,6 +55,7 @@ public class TestConfigurationFile {
         int inverterAddress=21;
         int baudRate=9600;
         float inverterQueryPeriodSec = (float) 30.5;
+        boolean enableEnergyEstimation = false;
 
         HwSettings hwSettings = new HwSettings();
         hwSettings.serialPort = serialPort;
@@ -61,28 +64,31 @@ public class TestConfigurationFile {
 
         MonitorSettings monitorSettings = new MonitorSettings();
         monitorSettings.inverterInterrogationPeriodSec = inverterQueryPeriodSec;
+        monitorSettings.energyEstimationEnable = enableEnergyEstimation;
 
         createAuroraConfigFile(fileName, RandomObjectGenerator.getA_HwSettings(), RandomObjectGenerator.getA_MonitorSettings());
 
 
-        AuroraMonitorTestImpl auroraMonitorSave = new AuroraMonitorTestImpl(mock(AuroraDriver.class),fileName, configFileDirPath);
+        AuroraMonitor auroraMonitorSave = new AuroraMonitor(mock(EventBus.class),mock(AuroraDriver.class), fileName, configFileDirPath);
 
         auroraMonitorSave.setInverterAddress(inverterAddress);
         auroraMonitorSave.setSerialPortBaudRate(baudRate);
         auroraMonitorSave.setSerialPortName(serialPort);
         auroraMonitorSave.setInverterInterrogationPeriod(inverterQueryPeriodSec);
+        auroraMonitorSave.setDailyCumulatedEnergyEstimationFeature(enableEnergyEstimation);
 
         auroraMonitorSave.saveHwSettingsConfiguration();
         auroraMonitorSave.saveConfiguration();
 
 
-        AuroraMonitorTestImpl auroraMonitorLoad = new AuroraMonitorTestImpl(mock(AuroraDriver.class),fileName, configFileDirPath);
+        AuroraMonitor auroraMonitorLoad = new AuroraMonitor(mock(EventBus.class),mock(AuroraDriver.class),fileName, configFileDirPath);
 
 
         assertEquals(serialPort,auroraMonitorLoad.getSerialPortName());
         assertEquals(inverterAddress,auroraMonitorLoad.getInverterAddress());
         assertEquals(baudRate,auroraMonitorLoad.getSerialPortBaudRate());
         assertEquals(inverterQueryPeriodSec,auroraMonitorLoad.getInverterInterrogationPeriod(), 0.0001);
+        assertEquals(enableEnergyEstimation,auroraMonitorLoad.getDailyCumulatedEnergyEstimationFeature());
 
 
     }

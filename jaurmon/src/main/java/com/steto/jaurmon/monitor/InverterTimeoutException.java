@@ -1,7 +1,10 @@
 package com.steto.jaurmon.monitor;
 
+import com.steto.jaurlib.eventbus.EBResponseNOK;
+
 /**
- * Created by sbrega on 18/02/2016.
+ * Created by stefano on 18/02/16.
  */
-public class InverterTimeoutException {
+public class InverterTimeoutException extends Throwable {
+
 }

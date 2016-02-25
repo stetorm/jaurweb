@@ -283,7 +283,7 @@ public class PvOutputNew {
                     Long now = new Date().getTime();
                     Long since = now - WINDOW_MS;
                     telemetriesQueue.removeOlderThan(since);
-                    PeriodicInverterTelemetries dataPublished = telemetriesQueue.fixedAverage();
+                    PeriodicInverterTelemetries dataPublished = telemetriesQueue.average();
                     if (dataPublished != null) {
                         publish2PvOutput(dataPublished);
                     } else {

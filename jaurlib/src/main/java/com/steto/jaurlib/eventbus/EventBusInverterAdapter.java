@@ -1,6 +1,5 @@
 package com.steto.jaurlib.eventbus;
 
-import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.steto.jaurlib.AuroraDriver;
@@ -19,29 +18,27 @@ public class EventBusInverterAdapter {
 
     public EventBusInverterAdapter(EventBus aEventBus, AuroraDriver aAuroraDriver, InverterCommandFactory aInverterCommandFactory) {
         eventBus = aEventBus;
-        auroraDriver= aAuroraDriver;
+        auroraDriver = aAuroraDriver;
         eventBus.register(this);
-        inverterCommandFactory=aInverterCommandFactory;
+        inverterCommandFactory = aInverterCommandFactory;
     }
 
 
     @Subscribe
-    @AllowConcurrentEvents
+
     public void handleInverterCommand(EBInverterRequest cmd) {
-        EBResponse ebResponse=null;
+        EBResponse ebResponse = null;
 
 
         try {
             InverterCommand inverterCommand = inverterCommandFactory.create(cmd.opcode(), cmd.subcode(), cmd.address());
 
-            if (inverterCommand!=null) {
+            if (inverterCommand != null) {
 
                 AuroraResponse auroraResponse = inverterCommand.execute(auroraDriver);
 
                 ebResponse = (auroraResponse.getErrorCode() == ResponseErrorEnum.NONE) ? new EBResponseOK(auroraResponse.getValue()) : new EBResponseNOK(auroraResponse.getErrorCode().get(), auroraResponse.getErrorCode().toString());
-            }
-            else
-            {
+            } else {
                 ebResponse = new EBResponseNOK(1, "Unrecognized Command");
             }
 

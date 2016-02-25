@@ -84,27 +84,6 @@ public class TestDataAcquisitionFromInverter {
 
     }
 
-    @Test
-    public void shouldAcquireDailyEnergy() throws Exception {
-        when(expectedCumulateEnergy.getLongParam()).thenReturn(cumulatedEnergy);
-        when(expectedPower.getFloatParam()).thenReturn(powerAll.floatValue());
-        when(expectedVoltage.getFloatParam()).thenReturn(voltageAll.floatValue());
-        when(expectedTemperature.getFloatParam()).thenReturn(temperature.floatValue());
-
-        when(expectedCumulateEnergy.getErrorCode()).thenReturn(ResponseErrorEnum.NONE);
-        when(expectedPower.getErrorCode()).thenReturn(ResponseErrorEnum.NONE);
-        when(expectedVoltage.getErrorCode()).thenReturn(ResponseErrorEnum.NONE);
-        when(expectedTemperature.getErrorCode()).thenReturn(ResponseErrorEnum.NONE);
-
-        auroraMonitor.acquireDataToBePublished();
-
-        assertEquals(cumulatedEnergy, auroraMonitor.getCumulatedEnergyReadout(),0001);
-        assertEquals(powerAll, auroraMonitor.getInstantPowerReadout(), 0.0001);
-        assertEquals(voltageAll, auroraMonitor.getVoltageReadout(), 0.0001);
-        assertEquals(temperature,auroraMonitor.getTemperatureReadout(), 0.0001);
-        assertTrue(auroraMonitor.isInverterOnline());
-
-    }
 
 
 

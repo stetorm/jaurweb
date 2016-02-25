@@ -31,7 +31,7 @@ import static junit.framework.TestCase.*;
 /**
  * Created by stefano on 31/01/16.
  */
-public class TestResponses {
+public class TestEventBusInterface {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -169,7 +169,7 @@ public class TestResponses {
         eventBus.post(ebPvOutputRequest);
         Thread.sleep(500);
         eventBus.post(inverterTelemetries1);
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
 
         //verify

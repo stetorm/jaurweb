@@ -27,6 +27,7 @@ public class TestUtility {
         createAuroraConfigFile(fileName, hwSettings);
         HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(new File(fileName));
         iniConfObj.setProperty("monitor.inverterInterrogationPeriodSec", monitorSettings.inverterInterrogationPeriodSec);
+        iniConfObj.setProperty("monitor.energyEstimationEnable", monitorSettings.energyEstimationEnable);
 
         iniConfObj.save();
 
