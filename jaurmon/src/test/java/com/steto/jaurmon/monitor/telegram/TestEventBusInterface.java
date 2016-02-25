@@ -3,18 +3,14 @@ package com.steto.jaurmon.monitor.telegram;
 
 import com.google.common.eventbus.EventBus;
 import com.steto.jaurmon.monitor.MonitorMsgDailyMaxPower;
-import com.steto.jaurmon.monitor.MonitorMsgInverterStatus;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.*;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import javax.security.auth.login.LoginContext;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -24,36 +20,48 @@ import static org.mockito.Mockito.*;
 public class TestEventBusInterface {
 
 
-    EventBus theEventBus ;
+    EventBus theEventBus;
 
     @Mock
     private CommandExecutor commandExecutor = mock(CommandExecutor.class);
 
     @InjectMocks
-    private TelegramPlg telegramPlg ;
+    private TelegramPlg telegramPlg;
 
     @Before
     public void setUp() throws Exception {
 
         theEventBus = new EventBus();
         telegramPlg = new TelegramPlg(theEventBus);
-        // va re-inizializzato con l'EventBus vero
+        // inizializza i mock e gli oggetti iniettati
         MockitoAnnotations.initMocks(this);
+        telegramPlg.setDestinationContact("Stefano_Brega");
 
     }
+
     @Test
-    public void should()
-    {
+    public void shouldSendMessageUponMaxPowerNotification() {
+
+        float maxpower = 1850;
+        String message = "Picco di Potenza giornaliero";
+
+        telegramPlg.setExePath("/usr/bin/telegram-cli");
+        telegramPlg.setDestinationContact("Stefano_Brega");
+        telegramPlg.setMaxPowerMessage(message);
+
+        String expectedCommand = "/usr/bin/telegram-cli -W -e \"msg Stefano_Brega "+message+": "+maxpower+"\"";
 
         ArgumentCaptor<String> commandCapture = ArgumentCaptor.forClass(String.class);
 
-
-        MonitorMsgDailyMaxPower monitorMsgInverterStatus = new MonitorMsgDailyMaxPower(1850);
+        //Exercise
+        MonitorMsgDailyMaxPower monitorMsgInverterStatus = new MonitorMsgDailyMaxPower(maxpower);
         theEventBus.post(monitorMsgInverterStatus);
 
-        verify(commandExecutor,times(1)).execute(commandCapture.capture());
-        String commandExecuted =  commandCapture.getValue();
-        assertEquals(commandExecuted, "ok");
+        //Verify
+        verify(commandExecutor, times(1)).execute(commandCapture.capture());
+        String commandExecuted = commandCapture.getValue();
+        assertEquals( expectedCommand,commandExecuted);
+        System.out.println(commandExecuted);
     }
 }
 
