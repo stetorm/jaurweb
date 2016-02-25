@@ -17,11 +17,10 @@ public class TelegramPlg {
     private String executablePath = "./telegram-cli";
     private String destionationUser = "";
     private String command = "";
-    private String maxPowerMessage="";
+    private String maxPowerMessage="Picco di Potenza giornaliero";
 
     public TelegramPlg(EventBus aEventBus) {
         this.eventBus = aEventBus;
-        System.out.println(commandExecutor);
         this.eventBus.register(this);
     }
 
@@ -29,10 +28,20 @@ public class TelegramPlg {
     public void handle(MonitorMsgDailyMaxPower maxPower) {
 
         try {
-            String command = composeCommand(maxPowerMessage+": "+maxPower.value);
-            System.out.print(commandExecutor.execute(command));
+            String[] command = composeCommand(maxPowerMessage+": "+maxPower.value);
+
+            String result = commandExecutor.execute(command);
+
+            String strCommand = "";
+
+            for (String part :command)
+            {
+                strCommand+= part  +" ";
+            }
+
+            log.info("Executed command: "+strCommand+ ",result: "+result);
         } catch (Exception ex) {
-            log.severe("Error handling msg:" + maxPower + ", executing command: " + ex.getMessage());
+            log.severe("Error handling msg:" + maxPower + ", executing command: "+command+", " + ex.getMessage());
         }
     }
 
@@ -46,8 +55,13 @@ public class TelegramPlg {
     }
 
 
-    private String composeCommand(String aMessage) {
-        return executablePath + " -W -e \"msg " + destionationUser + " " + aMessage+"\"";
+    private String[] composeCommand(String aMessage) {
+
+
+        String text =  "msg @dest @msg".replace("@dest",destionationUser).replace("@msg",aMessage);
+        String[] result =  {executablePath,"-W","-e",text};
+
+        return result;
 
     }
 

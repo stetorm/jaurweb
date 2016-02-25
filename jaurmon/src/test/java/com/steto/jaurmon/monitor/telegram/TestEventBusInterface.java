@@ -10,6 +10,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Date;
+
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -43,6 +45,7 @@ public class TestEventBusInterface {
     public void shouldSendMessageUponMaxPowerNotification() {
 
         float maxpower = 1850;
+        long timestamp= new Date().getTime();
         String message = "Picco di Potenza giornaliero";
 
         telegramPlg.setExePath("/usr/bin/telegram-cli");
@@ -51,17 +54,19 @@ public class TestEventBusInterface {
 
         String expectedCommand = "/usr/bin/telegram-cli -W -e \"msg Stefano_Brega "+message+": "+maxpower+"\"";
 
-        ArgumentCaptor<String> commandCapture = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String[]> commandCapture = ArgumentCaptor.forClass(String[].class);
 
         //Exercise
-        MonitorMsgDailyMaxPower monitorMsgInverterStatus = new MonitorMsgDailyMaxPower(maxpower);
+        MonitorMsgDailyMaxPower monitorMsgInverterStatus = new MonitorMsgDailyMaxPower(maxpower, timestamp);
         theEventBus.post(monitorMsgInverterStatus);
 
         //Verify
         verify(commandExecutor, times(1)).execute(commandCapture.capture());
-        String commandExecuted = commandCapture.getValue();
-        assertEquals( expectedCommand,commandExecuted);
-        System.out.println(commandExecuted);
+        String[] commandExecuted = commandCapture.getValue();
+        String strCommandExecuted = commandExecuted[0]+" "+commandExecuted[1]+" "+commandExecuted[2]+" \""+commandExecuted[3]+"\"";
+
+        assertEquals( expectedCommand,strCommandExecuted);
+        System.out.println(strCommandExecuted);
     }
 }
 
