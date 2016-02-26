@@ -140,14 +140,14 @@ class Main {
         service.shutdown();
         service.awaitTermination(30, TimeUnit.SECONDS);
 
-        // Print the expected sum of the "counter" column, which can be used to validate that the
+        // Print the expected sum of the "telemCounter" column, which can be used to validate that the
         // Keen server received all of the events.
         System.out.println("Expected sum of counters: " + getExpectedSum());
         System.out.println("You can verify this sum via the web workbench, or " +
                 "with the following curl command:");
         KeenProject defaultProject = client.getDefaultProject();
         System.out.printf("  curl \"https://api.keen.io/3.0/projects/%s/queries/sum?" +
-                        "api_key=<read key>&event_collection=sample-app&target_property=counter\"",
+                        "api_key=<read key>&event_collection=sample-app&target_property=telemCounter\"",
                 defaultProject.getProjectId()
         );
     }
@@ -288,7 +288,7 @@ class Main {
 
     private Map<String, Object> buildEvent(int n) {
         Map<String, Object> event = new HashMap<String, Object>();
-        event.put("counter", n);
+        event.put("telemCounter", n);
         event.put("string", generateString(rng, 3, 20));
         return event;
     }
