@@ -15,6 +15,7 @@ import com.steto.jaurmon.monitor.cmd.MonCmdReadStatus;
 import com.steto.jaurmon.monitor.cmd.MonReqLoadInvSettings;
 import com.steto.jaurmon.monitor.cmd.MonReqSaveInvSettings;
 import com.steto.jaurmon.monitor.pvoutput.PvOutputNew;
+import com.steto.jaurmon.monitor.telegram.TelegramPlg;
 import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
 import com.steto.jaurmon.utils.MyUtils;
 import jssc.SerialPortException;
@@ -24,6 +25,7 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +50,8 @@ public class AuroraMonitor {
     private InverterStatusEnum inverterStatus = InverterStatusEnum.OFFLINE;
     private boolean pvOutputRunning = false;
     private Date lastCheckDate;
+    private float dailyPeekPower = -1;
+    private long dailyPeekPowerTime = 0;
 
     public AuroraMonitor(EventBus aEventBus, AuroraDriver auroraDriver, String configFile, String dataLogDirPath) throws Exception {
 
@@ -303,16 +307,40 @@ public class AuroraMonitor {
             public void run() {
                 while (true) {
                     try {
+
                         Date actualDate = new Date();
                         if (!MyUtils.sameDay(actualDate, lastCheckDate)) {
                             dailyCumulatedEnergy = 0;
                             telemetriesQueue.clear();
+                            dailyPeekPower = 0;
                             log.info("It's a new day: Cumulated Energy RESET!");
                         }
                         lastCheckDate = actualDate;
 
                         PeriodicInverterTelemetries telemetries = acquireDataToBePublished();
                         updateInverterStatus(NONE);
+                        if (telemetries.gridPowerAll > dailyPeekPower) {
+                            dailyPeekPower = telemetries.gridPowerAll;
+                            dailyPeekPowerTime = telemetries.timestamp;
+
+
+                            Calendar c = Calendar.getInstance();
+                            long now = c.getTimeInMillis();
+                            c.set(Calendar.HOUR_OF_DAY, 0);
+                            c.set(Calendar.MINUTE, 0);
+                            c.set(Calendar.SECOND, 0);
+                            c.set(Calendar.MILLISECOND, 0);
+                            long passed = now - c.getTimeInMillis();
+                            long secondsPassed = passed / 1000;
+
+
+                            if (secondsPassed > 3600 * 14) {
+                                MonitorMsgDailyMaxPower monitorMsgDailyMaxPower = new MonitorMsgDailyMaxPower(dailyPeekPower, dailyPeekPowerTime);
+                                theEventBus.post(monitorMsgDailyMaxPower);
+                                log.info("Sent Msg: "+monitorMsgDailyMaxPower);
+                            }
+
+                        }
                         // fix energy calcutation when 0
                         telemetriesQueue.add(telemetries);
                         PeriodicInverterTelemetries fixedTelemetries = telemetriesQueue.fixedAverage();
@@ -445,12 +473,18 @@ public class AuroraMonitor {
 
             log.info("Creating Aurora Monitor...");
             EventBus theEventBus = new EventBus();
+
+            TelegramPlg telegramPlg = new TelegramPlg(theEventBus);
+            telegramPlg.setExePath("/home/pi/tg/bin/telegram-cli");
+            telegramPlg.setDestinationContact("Stefano_Brega");
+
             AuroraMonitor auroraMonitor = new AuroraMonitor(theEventBus, auroraDriver, configurationFileName, logDirectoryPath);
             EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus, auroraDriver, new InverterCommandFactory());
             auroraMonitor.init();
             auroraMonitor.start();
             PvOutputNew pvOutput = new PvOutputNew(configurationFileName, theEventBus);
             pvOutput.start();
+
 
             log.info("Creating Web Server...");
             AuroraWebServer auroraWebServer = new AuroraWebServer(8000, webDirectoryPath, theEventBus);
