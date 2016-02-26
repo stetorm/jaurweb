@@ -52,6 +52,7 @@ public class AuroraMonitor {
     private Date lastCheckDate;
     private float dailyPeekPower = -1;
     private long dailyPeekPowerTime = 0;
+    private boolean dailyPeekPowerSent = false;
 
     public AuroraMonitor(EventBus aEventBus, AuroraDriver auroraDriver, String configFile, String dataLogDirPath) throws Exception {
 
@@ -319,28 +320,33 @@ public class AuroraMonitor {
 
                         PeriodicInverterTelemetries telemetries = acquireDataToBePublished();
                         updateInverterStatus(NONE);
-                        if (telemetries.gridPowerAll > dailyPeekPower) {
+
+                        boolean newMaximum = telemetries.gridPowerAll > dailyPeekPower;
+                        if (newMaximum) {
                             dailyPeekPower = telemetries.gridPowerAll;
                             dailyPeekPowerTime = telemetries.timestamp;
-
-
-                            Calendar c = Calendar.getInstance();
-                            long now = c.getTimeInMillis();
-                            c.set(Calendar.HOUR_OF_DAY, 0);
-                            c.set(Calendar.MINUTE, 0);
-                            c.set(Calendar.SECOND, 0);
-                            c.set(Calendar.MILLISECOND, 0);
-                            long passed = now - c.getTimeInMillis();
-                            long secondsPassed = passed / 1000;
-
-
-                            if (secondsPassed > 3600 * 14) {
-                                MonitorMsgDailyMaxPower monitorMsgDailyMaxPower = new MonitorMsgDailyMaxPower(dailyPeekPower, dailyPeekPowerTime);
-                                theEventBus.post(monitorMsgDailyMaxPower);
-                                log.info("Sent Msg: "+monitorMsgDailyMaxPower);
-                            }
+                            dailyPeekPowerSent = false;
 
                         }
+
+                        Calendar c = Calendar.getInstance();
+                        long now = c.getTimeInMillis();
+                        c.set(Calendar.HOUR_OF_DAY, 0);
+                        c.set(Calendar.MINUTE, 0);
+                        c.set(Calendar.SECOND, 0);
+                        c.set(Calendar.MILLISECOND, 0);
+                        long passed = now - c.getTimeInMillis();
+                        long secondsPassed = passed / 1000;
+
+
+                        if (secondsPassed > 3600 * 14 && (!dailyPeekPowerSent || newMaximum)) {
+                            dailyPeekPowerSent = true;
+                            MonitorMsgDailyMaxPower monitorMsgDailyMaxPower = new MonitorMsgDailyMaxPower(dailyPeekPower, dailyPeekPowerTime);
+                            theEventBus.post(monitorMsgDailyMaxPower);
+                            log.info("Sent Msg: " + monitorMsgDailyMaxPower);
+                        }
+
+
                         // fix energy calcutation when 0
                         telemetriesQueue.add(telemetries);
                         PeriodicInverterTelemetries fixedTelemetries = telemetriesQueue.fixedAverage();
