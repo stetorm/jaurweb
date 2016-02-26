@@ -1,17 +1,17 @@
 package com.steto.jaurmon.monitor.telegram;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 
 /**
  * Created by stefano on 24/02/16.
  */
 public class CommandExecutor {
-    public String execute(String[] command) {
+    public String execute(String[] command) throws Exception {
         StringBuffer output = new StringBuffer();
 
         Process p;
-        try {
             p = Runtime.getRuntime().exec(command);
             p.waitFor();
             BufferedReader reader =
@@ -22,9 +22,6 @@ public class CommandExecutor {
                 output.append(line + "\n");
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         return output.toString();
 

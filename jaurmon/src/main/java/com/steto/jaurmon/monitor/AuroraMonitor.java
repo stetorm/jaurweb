@@ -25,10 +25,7 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static com.steto.jaurlib.response.ResponseErrorEnum.*;
@@ -302,6 +299,25 @@ public class AuroraMonitor {
 
 
     public void start() {
+        Timer timer = new Timer(true);
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                log.info("Timer expired, sending start message");
+                MonitorMsgStarted msgStarted = new MonitorMsgStarted();
+                try {
+                    log.info("Sending msg: " + msgStarted);
+                    theEventBus.post(msgStarted);
+                    log.info("Sent msg: " + msgStarted);
+                } catch (Exception e) {
+                    log.severe("Error sending msg: " + msgStarted+", "+e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }, 15 * 1000);
+
+        log.info("Timer armed, 60 secs to start msg");
+
 
         new Thread(new Runnable() {
             @Override
@@ -339,7 +355,7 @@ public class AuroraMonitor {
                         long secondsPassed = passed / 1000;
 
 
-                        if (secondsPassed > 3600 * 14 && (!dailyPeekPowerSent || newMaximum)) {
+                        if (secondsPassed > 3600 * 12 && (!dailyPeekPowerSent || newMaximum)) {
                             dailyPeekPowerSent = true;
                             MonitorMsgDailyMaxPower monitorMsgDailyMaxPower = new MonitorMsgDailyMaxPower(dailyPeekPower, dailyPeekPowerTime);
                             theEventBus.post(monitorMsgDailyMaxPower);
@@ -477,7 +493,7 @@ public class AuroraMonitor {
             AuroraDriver auroraDriver = new AuroraDriver(null, new AuroraRequestFactory(), new AuroraResponseFactory());
 
 
-            log.info("Creating Aurora Monitor...");
+            log.info("Creating Aurora Monitor...New2");
             EventBus theEventBus = new EventBus();
 
             TelegramPlg telegramPlg = new TelegramPlg(theEventBus);

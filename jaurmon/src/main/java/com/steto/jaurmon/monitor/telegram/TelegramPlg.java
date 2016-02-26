@@ -3,6 +3,7 @@ package com.steto.jaurmon.monitor.telegram;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.steto.jaurmon.monitor.MonitorMsgDailyMaxPower;
+import com.steto.jaurmon.monitor.MonitorMsgStarted;
 
 import java.util.logging.Logger;
 
@@ -42,6 +43,28 @@ public class TelegramPlg {
             log.info("Executed command: "+strCommand+ ",result: "+result);
         } catch (Exception ex) {
             log.severe("Error handling msg:" + maxPower + ", executing command: "+command+", " + ex.getMessage());
+        }
+    }
+
+    @Subscribe
+    public void handle(MonitorMsgStarted msg) {
+
+        try {
+            log.info("Handling MonitorMsgStarted");
+            String[] command = composeCommand("System Rebooted.");
+
+            String result = commandExecutor.execute(command);
+
+            String strCommand = "";
+
+            for (String part :command)
+            {
+                strCommand+= part  +" ";
+            }
+            result=result.replaceAll("[^\\w]"," ").trim().replaceAll(" +", " ");
+            log.info("Executed command: " + strCommand + ",result: " + result);
+        } catch (Exception ex) {
+            log.severe("Error handling msg:" + msg + ", executing command: "+command+", " + ex.getMessage());
         }
     }
 
