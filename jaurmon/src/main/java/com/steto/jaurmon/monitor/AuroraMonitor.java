@@ -310,7 +310,7 @@ public class AuroraMonitor {
                     theEventBus.post(msgStarted);
                     log.info("Sent msg: " + msgStarted);
                 } catch (Exception e) {
-                    log.severe("Error sending msg: " + msgStarted+", "+e.getMessage());
+                    log.severe("Error sending msg: " + msgStarted + ", " + e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -342,6 +342,7 @@ public class AuroraMonitor {
                             dailyPeekPower = telemetries.gridPowerAll;
                             dailyPeekPowerTime = telemetries.timestamp;
                             dailyPeekPowerSent = false;
+                            log.info("New daily peek power: " + dailyPeekPower);
 
                         }
 
@@ -355,7 +356,7 @@ public class AuroraMonitor {
                         long secondsPassed = passed / 1000;
 
 
-                        if (secondsPassed > 3600 * 12 && (!dailyPeekPowerSent || newMaximum)) {
+                        if (secondsPassed > 3600 * 14 && (!dailyPeekPowerSent || newMaximum)) {
                             dailyPeekPowerSent = true;
                             MonitorMsgDailyMaxPower monitorMsgDailyMaxPower = new MonitorMsgDailyMaxPower(dailyPeekPower, dailyPeekPowerTime);
                             theEventBus.post(monitorMsgDailyMaxPower);
