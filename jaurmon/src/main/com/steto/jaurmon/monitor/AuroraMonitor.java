@@ -253,7 +253,7 @@ public class AuroraMonitor {
     }
 
 
-    public float acquireInverterMeasure(String cmdCode, String cmdOpCode) throws InverterTimeoutException, InverterCRCException {
+    public float acquireInverterMeasure(String cmdCode, String cmdOpCode) throws InverterCRCException {
 
         float measure = 0;
         EBInverterRequest ebInverterRequest = new EBInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
@@ -266,7 +266,7 @@ public class AuroraMonitor {
             EBResponseNOK ebResponseNOK = (EBResponseNOK) ebInverterRequest.getResponse();
             ResponseErrorEnum error = fromCode(ebResponseNOK.error.code);
 
-            throw new InverterCRCException();
+            throw new InverterCRCException("Crc Error Executing Command (" + cmdCode + "," + cmdOpCode + ")");
 
 
         }
@@ -314,7 +314,7 @@ public class AuroraMonitor {
                     e.printStackTrace();
                 }
             }
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         log.info("Timer armed, 60 secs to start msg");
 
@@ -334,6 +334,7 @@ public class AuroraMonitor {
                         }
                         lastCheckDate = actualDate;
 
+                        log.info("Acquiring new data from inverter...");
                         PeriodicInverterTelemetries telemetries = acquireDataToBePublished();
                         updateInverterStatus(NONE);
 
@@ -376,10 +377,12 @@ public class AuroraMonitor {
 
                         theEventBus.post(telemetries);
                     } catch (InverterCRCException e) {
-                        updateInverterStatus(TIMEOUT);
-                    } catch (InverterTimeoutException e) {
                         updateInverterStatus(CRC);
-                        e.printStackTrace();
+                    } catch (InverterTimeoutException e) {
+                        updateInverterStatus(TIMEOUT);
+                    } catch (Exception e) {
+                       log.severe(e.getMessage());
+
                     } finally {
                         try {
                             long time2wait = (long) (settings.inverterInterrogationPeriodSec * 1000);

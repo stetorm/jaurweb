@@ -8,7 +8,7 @@ import java.io.InputStreamReader;
  * Created by stefano on 24/02/16.
  */
 public class CommandExecutor {
-    public String execute(String[] command) throws Exception {
+    public String execute(String[] command) throws IOException, InterruptedException {
         StringBuffer output = new StringBuffer();
 
         Process p;

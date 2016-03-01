@@ -1,6 +1,5 @@
 package com.steto.jaurmon.monitor;
 
-import com.steto.jaurmon.monitor.cmd.MonReqLoadInvSettings;
 import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
 import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
 

@@ -5,8 +5,6 @@ package com.steto.jaurmon.monitor.webserver;
  */
 
 import com.google.common.eventbus.EventBus;
-import com.steto.jaurmon.monitor.cmd.*;
-import com.steto.jaurmon.utils.HttpUtils;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -19,8 +17,6 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Map;
 import java.util.logging.Logger;
 
 

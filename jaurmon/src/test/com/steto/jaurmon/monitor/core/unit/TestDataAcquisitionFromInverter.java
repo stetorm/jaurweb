@@ -9,7 +9,6 @@ import com.steto.jaurlib.response.AResp_DspData;
 import com.steto.jaurlib.response.AResp_VersionId;
 import com.steto.jaurlib.response.ResponseErrorEnum;
 import com.steto.jaurmon.monitor.AuroraMonitor;
-import com.steto.jaurmon.monitor.RandomObjectGenerator;
 import com.steto.jaurmon.monitor.TestUtility;
 import org.junit.After;
 import org.junit.Before;

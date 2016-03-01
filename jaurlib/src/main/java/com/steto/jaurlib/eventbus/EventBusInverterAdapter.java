@@ -25,7 +25,6 @@ public class EventBusInverterAdapter {
 
 
     @Subscribe
-
     public void handleInverterCommand(EBInverterRequest cmd) {
         EBResponse ebResponse = null;
 

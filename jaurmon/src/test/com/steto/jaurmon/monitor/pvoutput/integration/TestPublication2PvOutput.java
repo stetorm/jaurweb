@@ -2,8 +2,6 @@ package com.steto.jaurmon.monitor.pvoutput.integration;
 
 import com.steto.jaurlib.AuroraDriver;
 import com.steto.jaurmon.monitor.*;
-import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
-import com.steto.jaurmon.utils.HttpUtils;
 import jssc.SerialPortException;
 import org.junit.After;
 import org.junit.Before;
@@ -13,9 +11,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertTrue;

@@ -42,7 +42,7 @@ public class TestEventBusInterface {
     }
 
     @Test
-    public void shouldSendMessageUponMaxPowerNotification() {
+    public void shouldSendMessageUponMaxPowerNotification() throws Exception {
 
         float maxpower = 1850;
         long timestamp= new Date().getTime();
