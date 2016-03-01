@@ -29,7 +29,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Main-Class>com.steto.monitor.AuroraWebServer</Main-Class>
+                            <Main-Class>com.steto.jaurmon.monitor.AuroraWebServer</Main-Class>
                             <version>${project.version}</version>
                         </manifestEntries>
                     </archive>
