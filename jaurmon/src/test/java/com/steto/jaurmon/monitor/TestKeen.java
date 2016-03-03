@@ -1,4 +1,4 @@
-package com.steto.jaurmon;
+package com.steto.jaurmon.monitor;
 
 /**
  * Created by stefano on 03/01/15.

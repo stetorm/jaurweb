@@ -358,6 +358,7 @@ public class AuroraMonitor {
 
 
                         if (secondsPassed > 3600 * 14 && (!dailyPeekPowerSent || newMaximum)) {
+                            log.fine("It's time to send a Peek Power " + dailyPeekPower);
                             dailyPeekPowerSent = true;
                             MonitorMsgDailyMaxPower monitorMsgDailyMaxPower = new MonitorMsgDailyMaxPower(dailyPeekPower, dailyPeekPowerTime);
                             theEventBus.post(monitorMsgDailyMaxPower);

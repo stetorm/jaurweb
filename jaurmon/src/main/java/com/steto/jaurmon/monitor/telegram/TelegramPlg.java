@@ -18,7 +18,7 @@ public class TelegramPlg {
     private String executablePath = "./telegram-cli";
     private String destionationUser = "";
     private String command = "";
-    private String maxPowerMessage="Picco di Potenza giornaliero";
+    private String maxPowerMessageDescription = "Picco di Potenza giornaliero";
 
     public TelegramPlg(EventBus aEventBus) {
         this.eventBus = aEventBus;
@@ -26,46 +26,63 @@ public class TelegramPlg {
     }
 
     @Subscribe
-    public void handle(MonitorMsgDailyMaxPower maxPower) {
+    public void handle(final MonitorMsgDailyMaxPower maxPowerMsg) {
 
-        try {
-            String[] command = composeCommand(maxPowerMessage+": "+maxPower.value);
+        log.fine("Handling:  " + maxPowerMsg);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
 
-            String result = commandExecutor.execute(command);
+                    final String[] command = composeCommand(maxPowerMessageDescription + ": " + maxPowerMsg.value);
 
-            String strCommand = "";
+                    int result = commandExecutor.execute(command,60000);
+                    String outputString = commandExecutor.getOutputString();
 
-            for (String part :command)
-            {
-                strCommand+= part  +" ";
+                    String strCommand = "";
+
+                    for (String part : command) {
+                        strCommand += part + " ";
+                    }
+
+                    log.info("Executed command: " + strCommand + ",result: " + result + ", output: " + outputString);
+                } catch (Exception ex) {
+                    log.severe("Error handling msg:" + maxPowerMsg + ", executing command: " + command + ", " + ex.getMessage());
+                }
             }
+        }).start();
 
-            log.info("Executed command: "+strCommand+ ",result: "+result);
-        } catch (Exception ex) {
-            log.severe("Error handling msg:" + maxPower + ", executing command: "+command+", " + ex.getMessage());
-        }
     }
 
     @Subscribe
-    public void handle(MonitorMsgStarted msg) {
+    public void handle(final MonitorMsgStarted msg) {
 
-        try {
-            log.info("Handling MonitorMsgStarted");
-            String[] command = composeCommand("System Rebooted.");
+        log.fine("Handling:  " + msg);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
 
-            String result = commandExecutor.execute(command);
+                try {
+                    log.info("Handling MonitorMsgStarted");
+                    String[] command = composeCommand("System Rebooted.");
 
-            String strCommand = "";
+                    int result = commandExecutor.execute(command,60000);
+                    String output = commandExecutor.getOutputString();
 
-            for (String part :command)
-            {
-                strCommand+= part  +" ";
+                    String strCommand = "";
+
+                    for (String part : command) {
+                        strCommand += part + " ";
+                    }
+
+                    log.info("Executed command: " + strCommand + ",result: " + result+ ",output: "+output);
+                } catch (Exception ex) {
+                    log.severe("Error handling msg:" + msg + ", executing command: " + command + ", " + ex.getMessage());
+                }
+
             }
-            result=result.replaceAll("[^\\w]"," ").trim().replaceAll(" +", " ");
-            log.info("Executed command: " + strCommand + ",result: " + result);
-        } catch (Exception ex) {
-            log.severe("Error handling msg:" + msg + ", executing command: "+command+", " + ex.getMessage());
-        }
+        }).start();
+
     }
 
 
@@ -81,14 +98,14 @@ public class TelegramPlg {
     private String[] composeCommand(String aMessage) {
 
 
-        String text =  "msg @dest @msg".replace("@dest",destionationUser).replace("@msg",aMessage);
-        String[] result =  {executablePath,"-W","-e",text};
+        String text = "msg @dest @msg".replace("@dest", destionationUser).replace("@msg", aMessage);
+        String[] result = {executablePath, "-W", "-e", text};
 
         return result;
 
     }
 
     public void setMaxPowerMessage(String message) {
-        maxPowerMessage = message;
+        maxPowerMessageDescription = message;
     }
 }
