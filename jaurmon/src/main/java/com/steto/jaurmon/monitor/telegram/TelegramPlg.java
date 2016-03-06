@@ -5,6 +5,7 @@ import com.google.common.eventbus.Subscribe;
 import com.steto.jaurmon.monitor.MonitorMsgDailyMaxPower;
 import com.steto.jaurmon.monitor.MonitorMsgStarted;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -17,7 +18,7 @@ public class TelegramPlg {
     private CommandExecutor commandExecutor = new CommandExecutor();
     private String executablePath = "./telegram-cli";
     private String destionationUser = "";
-    private String command = "";
+    private String[] command ;
     private String maxPowerMessageDescription = "Picco di Potenza giornaliero";
 
     public TelegramPlg(EventBus aEventBus) {
@@ -31,23 +32,26 @@ public class TelegramPlg {
         log.fine("Handling:  " + maxPowerMsg);
         new Thread(new Runnable() {
             @Override
+
             public void run() {
+                String strCommand = "";
+                for (String part : command) {
+                    strCommand += part + " ";
+                }
                 try {
 
-                    final String[] command = composeCommand(maxPowerMessageDescription + ": " + maxPowerMsg.value);
+
+                   command = composeCommand(maxPowerMessageDescription + ": " + maxPowerMsg.value);
 
                     int result = commandExecutor.execute(command,60000);
                     String outputString = commandExecutor.getOutputString();
 
-                    String strCommand = "";
 
-                    for (String part : command) {
-                        strCommand += part + " ";
-                    }
 
                     log.info("Executed command: " + strCommand + ",result: " + result + ", output: " + outputString);
                 } catch (Exception ex) {
-                    log.severe("Error handling msg:" + maxPowerMsg + ", executing command: " + command + ", " + ex.getMessage());
+                    log.log(Level.SEVERE,"Error handling msg:" + maxPowerMsg + ", executing command: " + strCommand + ", " + ex.getMessage(), ex);
+
                 }
             }
         }).start();

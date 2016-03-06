@@ -10,7 +10,7 @@ public class TelemetriesQueue {
 
     Logger log = Logger.getLogger(getClass().getSimpleName());
     private final int maxDim;
-    List<PeriodicInverterTelemetries> dataList = new ArrayList<PeriodicInverterTelemetries>();
+    List<PeriodicInverterTelemetries> dataList = Collections.synchronizedList(new ArrayList<PeriodicInverterTelemetries>());
 
     protected static Comparator<PeriodicInverterTelemetries> Timestamp = new Comparator<PeriodicInverterTelemetries>() {
         @Override

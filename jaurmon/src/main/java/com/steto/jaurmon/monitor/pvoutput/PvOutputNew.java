@@ -26,6 +26,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -299,17 +300,23 @@ public class PvOutputNew {
                     }
                 }
 
-                Thread.sleep(PERIODICITY);
             } catch (Exception e) {
-                log.severe(e.getMessage());
-                e.printStackTrace();
+                log.log(Level.SEVERE, e.getMessage(), e);
+            }
+            finally {
+                try {
+                    Thread.sleep(PERIODICITY);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
             }
         }
 
     }
 
 
-    public String savePvOutputRecord(PvOutputRecord pvData) throws IOException {
+    public String savePvOutputRecord(PvOutputRecord pvData) throws Exception {
 
         String[] values = new String[5];
         values[0] = Long.toString(pvData.timestamp);
@@ -329,7 +336,7 @@ public class PvOutputNew {
         return fileName;
     }
 
-    public boolean publish2PvOutput(PeriodicInverterTelemetries telemetries) throws IOException {
+    public boolean publish2PvOutput(PeriodicInverterTelemetries telemetries) throws Exception {
         boolean executed = false;
         String requestUrl = generatePvOutputLiveUpdateUrl(telemetries);// put in your url
         int responseCode = -1;
