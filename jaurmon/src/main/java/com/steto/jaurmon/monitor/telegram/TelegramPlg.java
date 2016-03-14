@@ -35,13 +35,16 @@ public class TelegramPlg {
 
             public void run() {
                 String strCommand = "";
-                for (String part : command) {
-                    strCommand += part + " ";
-                }
                 try {
 
 
                    command = composeCommand(maxPowerMessageDescription + ": " + maxPowerMsg.value);
+
+                    for (String part : command) {
+                        strCommand += part + "\n";
+                    }
+
+                    log.fine("Executing command: " + strCommand) ;
 
                     int result = commandExecutor.execute(command,60000);
                     String outputString = commandExecutor.getOutputString();
@@ -51,6 +54,7 @@ public class TelegramPlg {
                     log.info("Executed command: " + strCommand + ",result: " + result + ", output: " + outputString);
                 } catch (Exception ex) {
                     log.log(Level.SEVERE,"Error handling msg:" + maxPowerMsg + ", executing command: " + strCommand + ", " + ex.getMessage(), ex);
+                    log.severe("Error handling msg:" + maxPowerMsg + ", executing command: " + strCommand + ", " + ex.getMessage());
 
                 }
             }

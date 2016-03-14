@@ -56,11 +56,11 @@ public class CommandExecutor {
         try {
 
             errorCode = ft.get(timeoutMsec, TimeUnit.MILLISECONDS);
-            return errorCode;
         } catch (TimeoutException to) {
             p.destroy();
             throw to;
         }
+        return errorCode;
     }
 
     public String getOutputString() {
