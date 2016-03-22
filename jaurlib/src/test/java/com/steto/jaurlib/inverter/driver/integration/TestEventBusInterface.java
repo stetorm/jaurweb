@@ -347,6 +347,34 @@ public class TestEventBusInterface {
     }
 
     @Test
+    public void should() throws Exception {
+
+        // Setup Command
+        int inverterAddress = 2;
+        String opcde = "lastAlarms";
+        String subcode = "";
+
+        AResp_LastAlarms expectedResponse = new AResp_LastAlarms();
+        expectedResponse.setAlarm1(0);
+        expectedResponse.setAlarm2(1);
+        expectedResponse.setAlarm3(2);
+        expectedResponse.setAlarm4(3);
+        when(auroraDriver.acquireLastAlarms(eq(inverterAddress))).thenReturn(expectedResponse);
+
+        EBInverterRequest EBInverterRequest = new EBInverterRequest(opcde,subcode,inverterAddress);
+
+        // exercise
+        theEventBus.post(EBInverterRequest);
+
+        //verify
+        EBResponseOK result = (EBResponseOK) EBInverterRequest.getResponse();
+        System.out.println(result);
+
+        assertEquals(expectedResponse.toString(), result.data);
+
+    }
+
+    @Test
     public void shouldHandleBadCommand() throws Exception {
 
         // Setup Command

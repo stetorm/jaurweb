@@ -76,6 +76,9 @@ public class InverterCommandFactory {
             case "actualTime":
                 result = new InvCmdActualTime(addressParameter);
                 break;
+            case "lastAlarms":
+                result = new InvCmdLastAlarms(addressParameter);
+                break;
             default:
                 log.severe("Received unknown inverter command, with opcode: " + opCodeParameter);
 

@@ -16,7 +16,8 @@ public enum AuroraRequestCodeEnum {
     GETSYSTEMCONFIG(77),
     GETACCUMULATEDENERGY(78),
     GETMFGDATE(65),
-    GETTIMECOUNTER(80);
+    GETTIMECOUNTER(80),
+    GETLASTALARMS(86);
 
     public final int value;
 

@@ -311,4 +311,21 @@ public class TestInverterResponseAcquisition {
 
     }
 
+    @Test
+    public void shouldAcquireLastAlarms() throws Exception {
+
+
+        // exercise
+        AResp_LastAlarms response = (AResp_LastAlarms) auroraDriver.acquireLastAlarms(1);
+
+        // verify
+        Thread.sleep(1000);
+
+        Assert.assertEquals(auroraInverter.lastAlarms[0], response.getAlarm1());
+        Assert.assertEquals(auroraInverter.lastAlarms[1], response.getAlarm2());
+        Assert.assertEquals(auroraInverter.lastAlarms[2], response.getAlarm3());
+        Assert.assertEquals(auroraInverter.lastAlarms[3], response.getAlarm4());
+
+    }
+
 }
