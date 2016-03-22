@@ -53,8 +53,8 @@ public class TelegramPlg {
 
                     log.info("Executed command: " + strCommand + ",result: " + result + ", output: " + outputString);
                 } catch (Exception ex) {
-                    log.log(Level.SEVERE,"Error handling msg:" + maxPowerMsg + ", executing command: " + strCommand + ", " + ex.getMessage(), ex);
-                    log.severe("Error handling msg:" + maxPowerMsg + ", executing command: " + strCommand + ", " + ex.getMessage());
+                  //  log.log(Level.SEVERE,"Error handling msg:" + maxPowerMsg + ", executing command: " + strCommand + ", " + ex.getMessage(), ex);
+                    log.severe("Error handling msg:" + maxPowerMsg + ", executing command: " + strCommand + ", " + ex.getMessage()+", "+ex.getClass().getSimpleName());
 
                 }
             }

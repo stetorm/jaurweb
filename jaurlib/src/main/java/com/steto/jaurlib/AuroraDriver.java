@@ -213,6 +213,18 @@ public class AuroraDriver {
 
     }
 
+    public synchronized AuroraResponse acquireLastAlarms(int address) throws Exception {
+        AuroraRequest auroraRequest =  auroraRequestFactory.createAReq_AlarmsList();
+        log.info("Sending Request "+auroraRequest+" to address: " + address);
+        sendRequest(address, auroraRequest);
+        AuroraResponse responseMsg = readResponse(auroraRequest);
+        log.info("Received response: " + responseMsg);
+        return responseMsg;
+
+    }
+
+
+
     public void initSerialPort() throws SerialPortException {
         serialPort.openPort();//Open serial port
         serialPort.setParams(19200, 8, 1, 0);//Set params.
@@ -230,5 +242,6 @@ public class AuroraDriver {
         serialPort.setParams(serialPortBaudRate, 8, 1, 0);//Set params.
 
     }
+
 }
 

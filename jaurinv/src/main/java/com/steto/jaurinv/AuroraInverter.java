@@ -60,6 +60,8 @@ public class AuroraInverter implements Runnable, AuroraResponseBuilder {
     public long cumulatedEnergyPartial;
     public long cumulatedEnergyTotal;
     public int time = -1;
+
+    public int[] lastAlarms= new int[]{0,1,2,3};
     private boolean running = false;
 
 
@@ -391,6 +393,19 @@ public class AuroraInverter implements Runnable, AuroraResponseBuilder {
             result.setFloatParam(val);
         }
 
+
+        return result;
+    }
+
+    @Override
+    public AuroraResponse createResponse(AReq_LastAlarms request) {
+        AResp_LastAlarms result = new AResp_LastAlarms();
+        result.setAlarm1(lastAlarms[0]);
+        result.setAlarm2(lastAlarms[1]);
+        result.setAlarm3(lastAlarms[2]);
+        result.setAlarm4(lastAlarms[3]);
+        String description = "Last Alarms";
+        result.setDescription(description);
 
         return result;
     }

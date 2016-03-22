@@ -92,4 +92,12 @@ public class AuroraResponseFactory extends PDUFactory implements AuroraResponseB
         return result;
 
     }
+
+    @Override
+    public AuroraResponse createResponse(AReq_LastAlarms request) {
+        AResp_LastAlarms result = new AResp_LastAlarms();
+        result.setDescription("Alarms List");
+        return result;
+    }
+
 }
