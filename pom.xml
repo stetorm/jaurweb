@@ -14,5 +14,6 @@
     <module>jaurmon</module>
     <module>jaurlib</module>
     <module>jaurinv</module>
+    <module>jaurlibTest</module>
   </modules>
 </project>
