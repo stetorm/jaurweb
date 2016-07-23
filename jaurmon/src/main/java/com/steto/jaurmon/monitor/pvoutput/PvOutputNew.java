@@ -19,6 +19,7 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.*;
@@ -341,10 +342,12 @@ public class PvOutputNew {
         String requestUrl = generatePvOutputLiveUpdateUrl(telemetries);// put in your url
         int responseCode = -1;
 
+        CloseableHttpClient httpClient = null;
+
         try {
 
             RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(HTTP_REQUEST_TIMEOUT).build();
-            HttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+            httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
 
             HttpGet request = new HttpGet(requestUrl);
 
@@ -358,6 +361,9 @@ public class PvOutputNew {
         } catch (Exception e) {
             log.severe("Error publishing data to PVOutput: " + e.getMessage());
         }
+        finally{
+            httpClient.close();
+        }
         executed = (responseCode == 200);
         if (!executed) {
             log.info("Errore nell'invio dei dati: \n" + telemetries);
@@ -365,6 +371,7 @@ public class PvOutputNew {
         } else {
             log.info("Dati inviati a PVOutput: \n" + telemetries);
         }
+
 
         return executed;
     }

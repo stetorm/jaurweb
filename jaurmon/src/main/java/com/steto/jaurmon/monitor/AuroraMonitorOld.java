@@ -24,6 +24,7 @@ import jssc.SerialPortException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.*;
@@ -168,11 +169,11 @@ public class AuroraMonitorOld {
         PvOutputRecord pvOutputRecord = getActualPvOutputValues();
         String requestUrl = generatePvOutputLiveUpdateUrl(pvOutputRecord);// put in your url
         int responseCode = -1;
-
+        CloseableHttpClient httpClient = null;
         try {
 
             RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(pvOutputHttpRequestTimeout).build();
-            HttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
+             httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
 
             HttpGet request = new HttpGet(requestUrl);
 
@@ -185,6 +186,9 @@ public class AuroraMonitorOld {
 
         } catch (Exception e) {
             log.severe("Error publishing data to PVOutput: " + e.getMessage());
+        }
+        finally{
+            httpClient.close();
         }
         executed = (responseCode == 200);
         if (!executed) {
