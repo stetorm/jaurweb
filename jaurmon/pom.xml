@@ -38,7 +38,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Main-Class>com.steto.jaurmon.monitor.AuroraWebServer</Main-Class>
+                            <Main-Class>com.steto.jaurmon.monitor.AuroraMonitor</Main-Class>
                             <version>${project.version}</version>
                         </manifestEntries>
                     </archive>
@@ -78,6 +78,7 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
     <dependencies>
@@ -125,7 +126,7 @@
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
-            <version>4.4.1</version>
+            <version>4.4.2</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -148,13 +149,22 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>18.0</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.steto</groupId>
             <artifactId>jaurinv</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.steto</groupId>
+            <artifactId>jaurlib</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>1.6</version>
         </dependency>
         <dependency>
             <groupId>com.steto</groupId>

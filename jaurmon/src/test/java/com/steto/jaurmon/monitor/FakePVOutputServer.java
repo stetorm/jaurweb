@@ -13,7 +13,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Date;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * Created by stefano on 19/12/14.
@@ -36,7 +39,7 @@ class PvOutputHttpRequestHandler extends AbstractHandler {
 
         response.setContentType("text/html;charset=utf-8");
 
-        fakePVOutputServer.lastRequest = request.getQueryString();
+        fakePVOutputServer.requestQueue.add(request.getQueryString());
         System.out.println("request: " + request);
         try {
             if (fakePVOutputServer.getResponseDelay()>0)
@@ -73,7 +76,9 @@ public class FakePVOutputServer implements Runnable {
     public String key;
     public String pvOutUrl;
     String lastRequest = null;
+    Queue<String> requestQueue = new LinkedList<>();
     private long responseDelay;
+    private Server server;
 
 
     public FakePVOutputServer(Integer port, String pvOutKey, Integer pvOutSystemId, String pvOutServiceUrl) {
@@ -87,14 +92,23 @@ public class FakePVOutputServer implements Runnable {
 
     public String getLastRequest() {
 
-        return lastRequest;
+        return requestQueue.peek();
+    }
+
+    public String pollLastRequest() {
+
+        return requestQueue.poll();
     }
 
 
+    public void stop() throws Exception {
+        server.stop();
+        requestQueue.clear();
+    }
     @Override
     public void run() {
 
-        Server server = new Server();
+        server = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(servicePort);
         server.addConnector(connector);
@@ -138,4 +152,12 @@ public class FakePVOutputServer implements Runnable {
         return this.responseDelay ;
     }
 
+    public String waitForRequest(long wait) throws InterruptedException {
+        long timestamp = new Date().getTime();
+        while( null==getLastRequest() && ((new Date().getTime()-timestamp)<wait) )
+        {
+            Thread.sleep(200);
+        }
+        return getLastRequest();
+    }
 }

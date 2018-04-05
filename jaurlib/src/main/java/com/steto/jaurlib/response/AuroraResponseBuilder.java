@@ -30,4 +30,5 @@ public interface AuroraResponseBuilder {
 
     public AuroraResponse createResponse(AReq_DspData request);
 
+    public AuroraResponse createResponse(AReq_LastAlarms request);
 }

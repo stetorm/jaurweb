@@ -53,4 +53,10 @@ public class AResp_State  extends AuroraResponse {
     public char getAlarmState() {
         return getParam4();
     }
+
+    @Override
+    public String getValue() {
+        return ""+getSubCode()+getParam1()+getParam2()+getParam3()+getParam4();
+    }
+
 }

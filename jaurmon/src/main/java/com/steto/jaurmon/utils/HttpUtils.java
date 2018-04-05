@@ -58,12 +58,14 @@ public class HttpUtils {
     public static Map<String, String> getQueryMap(String query)
     {
         String[] params = query.split("&");
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = new HashMap<>();
         for (String param : params)
         {
-            String name = urlDecodeUTF8(param.split("=")[0]);
-            String value = urlDecodeUTF8(param.split("=")[1]);
-            map.put(name, value);
+            if(param.split("=").length==2) {
+                String name = urlDecodeUTF8(param.split("=")[0]);
+                String value = urlDecodeUTF8(param.split("=")[1]);
+                map.put(name, value);
+            }
         }
 
         return map;

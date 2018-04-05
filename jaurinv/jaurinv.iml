@@ -9,7 +9,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
-    <orderEntry type="jdk" jdkName="1.7" jdkType="JavaSDK" />
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="jaurlib" />
     <orderEntry type="library" name="Maven: org.eclipse.jetty.aggregate:jetty-all-server:8.1.16.v20140903" level="project" />

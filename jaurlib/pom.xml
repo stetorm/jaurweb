@@ -29,7 +29,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Main-Class>com.steto.monitor.AuroraWebServer</Main-Class>
+                            <Main-Class>com.steto.jaurmon.monitor.AuroraWebServer</Main-Class>
                             <version>${project.version}</version>
                         </manifestEntries>
                     </archive>
@@ -69,6 +69,11 @@
             <version>8.1.16.v20140903</version>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>18.0</version>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
@@ -94,12 +99,6 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
             <version>1.8.4</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>18.0</version>
             <scope>test</scope>
         </dependency>
 

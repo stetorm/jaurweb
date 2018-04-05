@@ -119,9 +119,9 @@ public class AuroraDriver {
         log.info("Sending Cumulated Energy Request to: " + address);
         AuroraRequest auroraRequest = auroraRequestFactory.createAReq_CumulatedEnergy(requestedValue);
         sendRequest(address, auroraRequest);
-        AuroraResponse responseMsg = readResponse(auroraRequest);
-        log.info("Received response: " + responseMsg);
-        return responseMsg;
+        AuroraResponse response = readResponse(auroraRequest);
+        log.info("Received response: " + response);
+        return response;
 
     }
 
@@ -199,11 +199,12 @@ public class AuroraDriver {
 
     public synchronized AuroraResponse acquireActualTime(int address) throws Exception {
 
-        return acquireData(address, auroraRequestFactory.createAReq_ActualTime());
+        return acquireData(address);
 
     }
 
-    public synchronized AuroraResponse acquireData(int address, AuroraRequest auroraRequest) throws Exception {
+    public synchronized AuroraResponse acquireData(int address) throws Exception {
+        AuroraRequest auroraRequest =  auroraRequestFactory.createAReq_ActualTime();
         log.info("Sending Request "+auroraRequest+"to address: " + address);
         sendRequest(address, auroraRequest);
         AuroraResponse responseMsg = readResponse(auroraRequest);
@@ -211,6 +212,18 @@ public class AuroraDriver {
         return responseMsg;
 
     }
+
+    public synchronized AuroraResponse acquireLastAlarms(int address) throws Exception {
+        AuroraRequest auroraRequest =  auroraRequestFactory.createAReq_AlarmsList();
+        log.info("Sending Request "+auroraRequest+" to address: " + address);
+        sendRequest(address, auroraRequest);
+        AuroraResponse responseMsg = readResponse(auroraRequest);
+        log.info("Received response: " + responseMsg);
+        return responseMsg;
+
+    }
+
+
 
     public void initSerialPort() throws SerialPortException {
         serialPort.openPort();//Open serial port
@@ -222,5 +235,13 @@ public class AuroraDriver {
     public void setSerialPort(SerialPort aSerialPort) {
         this.serialPort = aSerialPort;
     }
+
+    public void setSerialPort(String serialPortName, int serialPortBaudRate) throws SerialPortException {
+        serialPort  = new SerialPort(serialPortName);
+        serialPort.openPort();//Open serial port
+        serialPort.setParams(serialPortBaudRate, 8, 1, 0);//Set params.
+
+    }
+
 }
 

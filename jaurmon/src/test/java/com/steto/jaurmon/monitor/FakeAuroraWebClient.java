@@ -9,6 +9,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -24,8 +25,8 @@ public class FakeAuroraWebClient {
         this.serverAddress = serverAddress;
     }
 
-    public String sendLoadConfigRequest() throws IOException {
-        String requestUrl = serverAddress + "/cmd/loadCfg";
+    public String sendLoadInvSettingsRequest() throws IOException {
+        String requestUrl = serverAddress + "/cmd/loadInvSettings";
         String result = "";
 
         try {
@@ -60,7 +61,7 @@ public class FakeAuroraWebClient {
     }
 
     public String sendSaveSettingsRequest(Map mapConfig) {
-        String requestUrl = serverAddress + "/cmd/saveSettings/?" + HttpUtils.urlEncodeUTF8(mapConfig);
+        String requestUrl = serverAddress + "/cmd/saveInvSettings/?" + HttpUtils.urlEncodeUTF8(mapConfig);
         String result = "";
         try {
             HttpClient httpClient = HttpClients.createDefault();
@@ -96,6 +97,29 @@ public class FakeAuroraWebClient {
 
     public String sendStatusRequest() {
         String requestUrl = serverAddress + "/cmd/status";
+        String result = "";
+        try {
+            HttpClient httpClient = HttpClients.createDefault();
+            HttpResponse response = httpClient.execute(new HttpGet(requestUrl));
+            HttpEntity entity = response.getEntity();
+            result = EntityUtils.toString(entity, "UTF-8");
+            log.info("Sending 'GET' request: " + requestUrl);
+            log.info("Response Code: " + response.getStatusLine().getStatusCode() + " " + result);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    public String sendInverterCommand(String address, String opcode, String subcode) {
+
+        Map mapConfig = new HashMap<String,String>();
+        mapConfig.put("opcode",opcode);
+        mapConfig.put("subcode",subcode);
+        mapConfig.put("address",address);
+        String queryUrl = HttpUtils.urlEncodeUTF8(mapConfig) ;
+
+        String requestUrl = serverAddress + "/cmd/inv/" + "?" + queryUrl;
         String result = "";
         try {
             HttpClient httpClient = HttpClients.createDefault();

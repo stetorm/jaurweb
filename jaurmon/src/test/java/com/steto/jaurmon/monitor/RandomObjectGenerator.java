@@ -1,5 +1,8 @@
 package com.steto.jaurmon.monitor;
 
+import com.steto.jaurmon.monitor.pvoutput.PVOutputParams;
+import com.steto.jaurmon.monitor.pvoutput.PvOutputRecord;
+
 import java.util.Date;
 import java.util.Random;
 
@@ -17,6 +20,32 @@ public class RandomObjectGenerator {
         pvOutputRecord.timestamp = new Date().getTime();
         return pvOutputRecord;
     }
+
+    public static HwSettings getA_HwSettings() {
+        HwSettings hwSettings = new HwSettings();
+        hwSettings.inverterAddress = getInt(32);
+        hwSettings.serialPortBaudRate = getInt(105000);
+        hwSettings.serialPort = getString("/dev/myserialPort");
+        return hwSettings;
+    }
+
+    public static MonitorSettings getA_MonitorSettings() {
+        MonitorSettings monitorSettings = new MonitorSettings();
+        monitorSettings.inverterInterrogationPeriodSec = getInt(1000);
+        return monitorSettings;
+    }
+
+    public static PVOutputParams getA_PvOutputParams() {
+        PVOutputParams pvOutParams = new PVOutputParams();
+        pvOutParams.systemId = getInt(32);
+        pvOutParams.period= getInt(100);
+        pvOutParams.timeWindowSec= getInt(1000);
+        pvOutParams.apiKey = getString("api");
+        pvOutParams.url = getString("http://url?");
+        return pvOutParams;
+    }
+
+
 
     public static int getInt(int maxNum) {
         Random random = new Random();
@@ -54,4 +83,16 @@ public class RandomObjectGenerator {
         return random.nextBoolean();
     }
 
+    public static String getString(String baseString) {
+        return baseString + getInt(100000);
+    }
+
+    public static PeriodicInverterTelemetries getA_PeriodicInverterTelemetries() {
+        PeriodicInverterTelemetries result = new PeriodicInverterTelemetries();
+        result.gridVoltageAll = getFloat(500);
+        result.cumulatedEnergy = getFloat(50000);
+        result.inverterTemp = getFloat(100);
+        result.gridPowerAll = getFloat(10000);
+        return result;
+    }
 }

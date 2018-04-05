@@ -71,6 +71,7 @@ public class AuroraRequestFactory extends PDUFactory {
         mapCode2ClassMsg.put(AuroraRequestCodeEnum.GETTIMECOUNTER.value, AReq_TimeCounter.class);
         mapCode2ClassMsg.put(AuroraRequestCodeEnum.GETACCUMULATEDENERGY.value, AReq_CumulatedEnergy.class);
         mapCode2ClassMsg.put(AuroraRequestCodeEnum.GETACTUALTIME.value, AReq_ActualTime.class);
+        mapCode2ClassMsg.put(AuroraRequestCodeEnum.GETLASTALARMS.value, AReq_LastAlarms.class);
 
     }
 
@@ -141,6 +142,11 @@ public class AuroraRequestFactory extends PDUFactory {
 
     public AuroraRequest createAReq_ActualTime() {
         AReq_ActualTime req = (AReq_ActualTime) create(AReq_ActualTime.class);
+        return req;
+    }
+
+    public AuroraRequest createAReq_AlarmsList() {
+        AReq_LastAlarms req = (AReq_LastAlarms) create(AReq_LastAlarms.class);
         return req;
     }
 }

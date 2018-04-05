@@ -1,161 +1,78 @@
 package com.steto.jaurmon.monitor;
 
-import au.com.bytecode.opencsv.CSVReader;
-import au.com.bytecode.opencsv.CSVWriter;
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.steto.jaurlib.AuroraDriver;
-import com.steto.jaurlib.request.AuroraCumEnergyEnum;
-import com.steto.jaurlib.request.AuroraDspRequestEnum;
+import com.steto.jaurlib.cmd.InverterCommandFactory;
+import com.steto.jaurlib.eventbus.*;
+import com.steto.jaurlib.request.AuroraRequestFactory;
 import com.steto.jaurlib.response.AResp_VersionId;
 import com.steto.jaurlib.response.AuroraResponse;
+import com.steto.jaurlib.response.AuroraResponseFactory;
 import com.steto.jaurlib.response.ResponseErrorEnum;
-import com.steto.jaurmon.utils.FormatStringUtils;
-import com.steto.jaurmon.utils.HttpUtils;
+import com.steto.jaurmon.monitor.cmd.MonCmdReadStatus;
+import com.steto.jaurmon.monitor.cmd.MonReqLoadInvSettings;
+import com.steto.jaurmon.monitor.cmd.MonReqSaveInvSettings;
+import com.steto.jaurmon.monitor.pvoutput.PvOutputNew;
+import com.steto.jaurmon.monitor.telegram.TelegramPlg;
+import com.steto.jaurmon.monitor.webserver.AuroraWebServer;
 import com.steto.jaurmon.utils.MyUtils;
-import jssc.SerialPort;
 import jssc.SerialPortException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.configuration.SubnodeConfiguration;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.text.SimpleDateFormat;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-/**
- * Created by stefano on 20/12/14.
- */
+import static com.steto.jaurlib.response.ResponseErrorEnum.*;
 
-enum InverterStatusEnum {
-    OFFLINE(0),
-    ONLINE(1),
-    UNCERTAIN(3);
-
-    int val;
-
-    InverterStatusEnum(int aVal) {
-
-        val = aVal;
-    }
-}
-
-class PVOutputParams {
-    int systemId;
-    float period;
-    String url;
-    String apiKey;
-
-    public Properties toProperties() {
-        Properties result = new Properties();
-
-        result.setProperty("pvOutputSystemId", String.valueOf(systemId));
-        result.setProperty("pvOutputPeriod", String.valueOf(period));
-        result.setProperty("pvOutputUrl", url);
-        result.setProperty("pvOutputApiKey", apiKey);
-
-        return result;
-    }
-
-}
-
-class HwSettings {
-    String serialPort = "/dev/tty";
-    int serialPortBaudRate = 19200;
-    int inverterAddress = 2;
-
-    public Properties toProperties() {
-        Properties result = new Properties();
-        result.setProperty("serialPort", serialPort);
-        result.setProperty("serialPortBaudRate", String.valueOf(serialPortBaudRate));
-        result.setProperty("inverterAddress", String.valueOf(inverterAddress));
-
-        return result;
-    }
-}
 
 public class AuroraMonitor {
 
 
-    private String pvOutputDataDirectoryPath;
-    protected PVOutputParams pvOutputParams;
+    private final EventBus theEventBus;
     protected HwSettings hwSettings;
-    public int pvOutputHttpRequestTimeout = 10000;
+    protected MonitorSettings settings;
+    TelemetriesQueue telemetriesQueue = new TelemetriesQueue(2);
 
 
     private final String configurationFileName;
     protected Logger log = Logger.getLogger(getClass().getSimpleName());
     protected float dailyCumulatedEnergy = 0;
-    protected long allPowerGeneration = 0;
-    protected double inverterTemperature = 0;
-    protected double allGridVoltage = 0;
     protected final AuroraDriver auroraDriver;
-    private ScheduledFuture<?> pvOutputFeature;
-    Map<String, AuroraCumEnergyEnum> mapEnergyCmd = new HashMap<String, AuroraCumEnergyEnum>();
-    Map<String, AuroraDspRequestEnum> mapDspCmd = new HashMap<String, AuroraDspRequestEnum>();
     private InverterStatusEnum inverterStatus = InverterStatusEnum.OFFLINE;
     private boolean pvOutputRunning = false;
     private Date lastCheckDate;
+    private float dailyPeekPower = -1;
+    private long dailyPeekPowerTime = 0;
+    private boolean dailyPeekPowerSent = false;
 
-    public AuroraMonitor(AuroraDriver auroraDriver, String configFile, String dataLogDirPath) throws IOException, SerialPortException {
+    public AuroraMonitor(EventBus aEventBus, AuroraDriver auroraDriver, String configFile, String dataLogDirPath) throws Exception {
+
+        theEventBus = aEventBus;
         this.auroraDriver = auroraDriver;
 
         this.configurationFileName = configFile;
-        this.pvOutputDataDirectoryPath = dataLogDirPath;
 
         lastCheckDate = new Date();
 
-        pvOutputParams = loadPvOutputConfiguration();
         hwSettings = loadHwSettings();
+        settings = loadSettings();
 
-        pvOutputParams = pvOutputParams == null ? new PVOutputParams() : pvOutputParams;
+
         hwSettings = hwSettings == null ? new HwSettings() : hwSettings;
+        settings = settings == null ? new MonitorSettings() : settings;
 
-        mapEnergyCmd.put("daily", AuroraCumEnergyEnum.DAILY);
-        mapEnergyCmd.put("weekly", AuroraCumEnergyEnum.WEEKLY);
-        mapEnergyCmd.put("monthly", AuroraCumEnergyEnum.MONTHLY);
-        mapEnergyCmd.put("yearly", AuroraCumEnergyEnum.YEARLY);
-        mapEnergyCmd.put("last7days", AuroraCumEnergyEnum.LAST7DAYS);
-        mapEnergyCmd.put("partial", AuroraCumEnergyEnum.PARTIAL);
-        mapEnergyCmd.put("total", AuroraCumEnergyEnum.TOTAL);
 
-        mapDspCmd.put("freqAll", AuroraDspRequestEnum.FREQUENCY_ALL);
-        mapDspCmd.put("gridVoltageAll", AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
-        mapDspCmd.put("gridCurrentAll", AuroraDspRequestEnum.GRID_CURRENT_ALL);
-        mapDspCmd.put("gridPowerAll", AuroraDspRequestEnum.GRID_POWER_ALL);
-        mapDspCmd.put("input1Voltage", AuroraDspRequestEnum.INPUT_1_VOLTAGE);
-        mapDspCmd.put("input1Current", AuroraDspRequestEnum.INPUT_1_CURRENT);
-        mapDspCmd.put("input2Voltage", AuroraDspRequestEnum.INPUT_2_VOLTAGE);
-        mapDspCmd.put("input2Current", AuroraDspRequestEnum.INPUT_2_CURRENT);
-        mapDspCmd.put("inverterTemp", AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
-        mapDspCmd.put("boosterTemp", AuroraDspRequestEnum.BOOSTER_TEMPERATURE_GRID_TIED);
+        theEventBus.register(this);
 
-        createPvOutputLogDirectory();
 
     }
 
-
-    protected void createPvOutputLogDirectory() {
-        File dataLogDirectory = new File(pvOutputDataDirectoryPath);
-        if (!dataLogDirectory.exists()) {
-            if (!dataLogDirectory.mkdirs()) {
-                log.warning("Error creating directory: " + pvOutputDataDirectoryPath + " for PVoutput data backup. Assuming working directory.");
-                pvOutputDataDirectoryPath = ".";
-            } else {
-                log.info("Created directory: " + pvOutputDataDirectoryPath + " for PVoutput data backup.");
-            }
-        } else {
-            log.info("Using directory: " + pvOutputDataDirectoryPath + " for PVoutput data backup.");
-        }
-
-    }
 
     public void init() throws SerialPortException {
 
@@ -167,509 +84,73 @@ public class AuroraMonitor {
 
     protected void initInverterDriver(String serialPortName, int serialPortBaudRate) throws SerialPortException {
 
-        try {
-            SerialPort newSerialPort = new SerialPort(serialPortName);
-            newSerialPort.openPort();//Open serial port
-            newSerialPort.setParams(serialPortBaudRate, 8, 1, 0);//Set params.
-            auroraDriver.setSerialPort(newSerialPort);
-            log.info("Serial Port initialized with values: " + serialPortName + ", " + serialPortBaudRate);
-        } catch (Exception ex) {
-            log.severe("Error initializing driver: " + ex.getMessage());
-        }
-    }
-
-    public void setPvOutputUrl(String pvOutputUrl) {
-        pvOutputParams.url = pvOutputUrl;
-    }
-
-    public void setPvOutputApiKey(String pvOutputApiKey) {
-        pvOutputParams.apiKey = pvOutputApiKey;
-    }
-
-    public void setPvOutputPeriod(float period) {
-        pvOutputParams.period = period;
-    }
-
-    public String getPvOutputApiKey() {
-        return pvOutputParams.apiKey;
-    }
-
-    public int getPvOutputSystemId() {
-        return pvOutputParams.systemId;
-    }
-
-    public String getPvOutputUrl() {
-        return pvOutputParams.url;
-    }
-
-    public float getPvOutputPeriod() {
-        return pvOutputParams.period;
+        auroraDriver.setSerialPort(serialPortName, serialPortBaudRate);
+        log.info("Serial Port initialized with values: " + serialPortName + ", " + serialPortBaudRate);
     }
 
 
-    public void setPvOutputSystemId(int pvOutputSystemId) {
-        pvOutputParams.systemId = pvOutputSystemId;
-    }
+    protected HwSettings loadHwSettings() throws Exception {
 
-    public boolean publish2PvOutput() throws IOException {
-        boolean executed = false;
-        PvOutputRecord pvOutputRecord = getActualPvOutputValues();
-        String requestUrl = generatePvOutputLiveUpdateUrl(pvOutputRecord);// put in your url
-        int responseCode = -1;
-
-        try {
-
-            RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(pvOutputHttpRequestTimeout).build();
-            HttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
-
-            HttpGet request = new HttpGet(requestUrl);
-
-            org.apache.http.HttpResponse response = httpClient.execute(request);
-            log.fine("Response code:" + response.getStatusLine());
-
-            responseCode = response.getStatusLine().getStatusCode();
-            log.info("Sending 'GET' request: " + requestUrl);
-
-
-        } catch (Exception e) {
-            log.severe("Error publishing data to PVOutput: " + e.getMessage());
-        }
-        executed = (responseCode== 200);
-        if (!executed) {
-            savePvOutputRecord(pvOutputRecord);
-        }
-        else
-        {
-            log.info("Dati inviati a PVOutput: \n" + getActualPvOutputValues());
-        }
-
-        return executed;
-    }
-
-
-    public String pvOutputRecordList2String(List<PvOutputRecord> dataList) {
-        String charSep = ",";
-        String recordSep = ";";
-        String data = "";
-        for (PvOutputRecord pvRecord : dataList) {
-            Date date = new Date();
-            date.setTime(pvRecord.timestamp);
-            data += convertDate(date) + charSep + convertDayTime(date) + charSep + pvRecord.dailyCumulatedEnergy + charSep + pvRecord.totalPowerGenerated + charSep;
-            data += "-1" + charSep + "-1" + charSep;
-            data += pvRecord.temperature + charSep + pvRecord.totalGridVoltage + recordSep;
-        }
-        data = data.substring(0, data.length() - 1);
-
-        return data;
-
-    }
-
-    public void batchPublish2PvOutput(String dataStorageFileName) throws IOException {
-        int responseCode = -1;
-        String data = "";
-        String requestUrl = "";
-        boolean toBeDeleted = false;
-        try {
-            List<PvOutputRecord> savedData2Send = readPvOutputRecordSet(dataStorageFileName);
-            if (!savedData2Send.isEmpty()) {
-                data = pvOutputRecordList2String(savedData2Send);
-                requestUrl = generatePvOutputBatchUpdateUrl(data);
-                URL obj = new URL(requestUrl);
-                HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-                // optional default is GET
-                con.setConnectTimeout(5000);
-                con.setReadTimeout(5000);
-                con.setRequestMethod("GET");
-                responseCode = con.getResponseCode();
-                log.info("Sending 'GET' request: " + requestUrl);
-                log.info("Response Code: " + responseCode + " " + con.getResponseMessage());
-                toBeDeleted = (responseCode == 200);
-            } else {
-                log.warning("File: " + dataStorageFileName + " is empty or has no valid data");
-            }
-        } catch (Exception e) {
-            log.severe("Error publishing batch data  to PVOutput: " + e.getMessage());
-            log.severe("Data: " + data + "\n requestUrl" + requestUrl);
-        }
-        if (toBeDeleted) {
-            boolean deleted = new File(dataStorageFileName).delete();
-            log.info("Data contained in: " + dataStorageFileName + " where successfully updated to PvOutput. The file was deleted? " + deleted);
-        }
-
-
-    }
-
-    public PvOutputRecord getActualPvOutputValues() {
-
-        PvOutputRecord result = new PvOutputRecord();
-
-
-        Date now = new Date();
-        result.timestamp = now.getTime();
-        result.dailyCumulatedEnergy = dailyCumulatedEnergy;
-        result.totalPowerGenerated = allPowerGeneration;
-        result.temperature = (float) inverterTemperature;
-        result.totalGridVoltage = (float) allGridVoltage;
-        return result;
-
-
-    }
-
-    public boolean testPvOutputServer() throws IOException {
-
-        int responseCode = -1;
-        String requestUrl = generatePvOutputTestUrl();
-
-        try {
-            URL obj = new URL(requestUrl);
-            HttpURLConnection con;
-            con = (HttpURLConnection) obj.openConnection();
-
-            // optional default is GET
-            con.setRequestMethod("GET");
-
-            responseCode = con.getResponseCode();
-            log.info("Sending 'GET' request: " + requestUrl);
-            log.info("Response Code: " + responseCode + " " + con.getResponseMessage());
-        } catch (Exception e) {
-            log.severe("Http request for test failed. Response Code: " + responseCode + "," + e.getMessage());
-        }
-
-        return responseCode == 200;
-
-    }
-
-
-    private String generatePvOutputBatchUpdateUrl(String data) {
-        Map<String, Object> map = new LinkedHashMap<>();
-
-
-        map.put("key", pvOutputParams.apiKey);
-        map.put("sid", pvOutputParams.systemId);
-        map.put("data", data);
-
-        String result = pvOutputParams.url + "/addbatchstatus.jsp?" + HttpUtils.urlEncodeUTF8(map);
-        return result;
-    }
-
-    private String generatePvOutputLiveUpdateUrl(PvOutputRecord pvOutputRecord) {
-        Map<String, Object> map = new LinkedHashMap<>();
-
-        Date now = new Date();
-        now.setTime(pvOutputRecord.timestamp);
-        String date = convertDate(now);
-        String time = convertDayTime(now);
-        map.put("key", pvOutputParams.apiKey);
-        map.put("sid", pvOutputParams.systemId);
-        map.put("d", date);
-        map.put("t", time);
-        map.put("v1", pvOutputRecord.dailyCumulatedEnergy);
-        map.put("v2", pvOutputRecord.totalPowerGenerated);
-        map.put("v5", pvOutputRecord.temperature);
-        map.put("v6", pvOutputRecord.totalGridVoltage);
-
-        String result = pvOutputParams.url + "/addstatus.jsp?" + HttpUtils.urlEncodeUTF8(map);
-        return result;
-    }
-
-    private String generatePvOutputTestUrl() {
-        Map<String, Object> map = new LinkedHashMap<>();
-
-        map.put("key", pvOutputParams.apiKey);
-        map.put("sid", pvOutputParams.systemId);
-
-        String result = pvOutputParams.url + "/getinsolation.jsp?" + HttpUtils.urlEncodeUTF8(map);
-        return result;
-    }
-
-    public static String convertDate(Date aDate) {
-        SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
-
-        return DATE_FORMAT.format(aDate);
-    }
-
-    public static String convertDayTime(Date aDate) {
-        SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm");
-        DATE_FORMAT.setTimeZone(TimeZone.getDefault());
-
-        return DATE_FORMAT.format(aDate);
-    }
-
-    public float getCumulatedEnergyReadout() {
-        return dailyCumulatedEnergy;
-    }
-
-    public long getInstantPowerReadout() {
-        return allPowerGeneration;
-    }
-
-    public Double getVoltageReadout() {
-        return allGridVoltage;
-    }
-
-    public Double getTemperatureReadout() {
-
-        return inverterTemperature;
-    }
-
-    public boolean acquireDataToBePublished() {
-        boolean result = true;
-        AuroraResponse response = null;
-        try {
-            log.info("Starting data acquisition from inverter");
-            response = auroraDriver.acquireCumulatedEnergy(hwSettings.inverterAddress, AuroraCumEnergyEnum.DAILY);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            long cumulatedEnergy = response.getLongParam();
-            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_POWER_ALL);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            long actualPower = (long) response.getFloatParam();
-            dailyCumulatedEnergy = cumulatedEnergy == 0 ? dailyCumulatedEnergy + (actualPower + allPowerGeneration) * getPvOutputPeriod() / (2 * 60 * 60) : cumulatedEnergy;
-            allPowerGeneration = actualPower;
-            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.GRID_VOLTAGE_ALL);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            allGridVoltage = response.getFloatParam();
-            response = auroraDriver.acquireDspValue(hwSettings.inverterAddress, AuroraDspRequestEnum.INVERTER_TEMPERATURE_GRID_TIED);
-            result = result && (response.getErrorCode() == ResponseErrorEnum.NONE);
-            inverterTemperature = response.getFloatParam();
-            log.info("data acquisition from inverter completed");
-        } catch (Exception e) {
-            result = false;
-            String errMsg = "Data acquisition failed: " + e.getMessage();
-            if (response != null) {
-                errMsg += ", Error Code: " + response.getErrorCode();
-            }
-            log.severe(errMsg);
-        }
-
-        updateInverterStatus(result);
-        return result;
-
-    }
-
-    protected HwSettings loadHwSettings() {
-
-        Properties properties = new Properties();
         HwSettings result = new HwSettings();
 
-        String currentProperty = "";
         try {
-            InputStream inputStream = new FileInputStream(new File(configurationFileName));
-            properties.load(inputStream);
-            currentProperty = "inverterAddress";
-            result.inverterAddress = Integer.parseInt(properties.getProperty(currentProperty));
-            currentProperty = "serialPortBaudRate";
-            result.serialPortBaudRate = Integer.parseInt(properties.getProperty(currentProperty));
-            currentProperty = "serialPort";
-            result.serialPort = properties.getProperty(currentProperty);
+            HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
+            SubnodeConfiguration inverterParams = iniConfObj.getSection("inverter");
+
+            result.inverterAddress = inverterParams.getInt("inverterAddress");
+            result.serialPortBaudRate = inverterParams.getInt("serialPortBaudRate");
+            result.serialPort = inverterParams.getString("serialPort");
         } catch (Exception e) {
-            log.severe("Error reading file: " + configurationFileName + ", property: " + currentProperty);
-            result = null;
+            String errMsg = "Error reading file: " + configurationFileName + ", " + e.getMessage();
+//            log.severe("Error reading file: " + configurationFileName + ", " + e.getMessage());
+            throw new Exception(errMsg);
         }
 
         return result;
     }
 
-    public PVOutputParams loadPvOutputConfiguration() throws IOException {
+    protected MonitorSettings loadSettings() throws Exception {
 
-        Properties properties = new Properties();
-        PVOutputParams result = new PVOutputParams();
+        MonitorSettings result = new MonitorSettings();
 
-        String currentProperty = "";
         try {
-            InputStream inputStream = new FileInputStream(new File(configurationFileName));
-            properties.load(inputStream);
-            log.info("Valori letti dal file: "+configurationFileName+",\n "+properties.toString());
-            currentProperty = "pvOutputSystemId";
-            result.systemId = Integer.parseInt(properties.getProperty(currentProperty));
-            currentProperty = "pvOutputPeriod";
-            result.period = Float.parseFloat(properties.getProperty(currentProperty));
-            currentProperty = "pvOutputUrl";
-            result.url = properties.getProperty(currentProperty);
-            currentProperty = "pvOutputApiKey";
-            result.apiKey = properties.getProperty(currentProperty);
+            HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
+            SubnodeConfiguration inverterParams = iniConfObj.getSection("monitor");
+
+            result.inverterInterrogationPeriodSec = inverterParams.getFloat("inverterInterrogationPeriodSec");
+            result.energyEstimationEnable = inverterParams.getBoolean("energyEstimationEnable");
         } catch (Exception e) {
-            log.severe("Error reading file: " + configurationFileName + ", property: " + currentProperty);
-            result = null;
+            String errMsg = "Error reading file: " + configurationFileName + ", " + e.getMessage();
+//            log.severe("Error reading file: " + configurationFileName + ", " + e.getMessage());
+            throw new Exception(errMsg);
         }
 
         return result;
-
-    }
-
-    public void savePvOutputConfiguration() throws IOException {
-
-        Properties pvOutputParamsProperties = pvOutputParams.toProperties();
-
-        HwSettings fileHwSettings = loadHwSettings();
-        Properties merged = new Properties();
-        if (fileHwSettings != null) {
-            Properties hwSettingsProperties = fileHwSettings.toProperties();
-            merged.putAll(hwSettingsProperties);
-        }
-        merged.putAll(pvOutputParamsProperties);
-
-        OutputStream outputStream = new FileOutputStream(new File(configurationFileName));
-        merged.store(outputStream, "");
-        outputStream.close();
-
     }
 
 
-    public void saveHwSettingsConfiguration() throws IOException {
+    public void saveHwSettingsConfiguration() throws IOException, ConfigurationException {
 
-        Properties hwSettingsProperties = hwSettings.toProperties();
 
-        PVOutputParams filePvOutputParams = loadPvOutputConfiguration();
-        Properties merged = new Properties();
-        if (filePvOutputParams != null) {
-            Properties filePvOutputParamsProperties = filePvOutputParams.toProperties();
-            merged.putAll(filePvOutputParamsProperties);
-        }
-        merged.putAll(hwSettingsProperties);
+        HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
+        iniConfObj.setProperty("inverter.inverterAddress", hwSettings.inverterAddress);
+        iniConfObj.setProperty("inverter.serialPortBaudRate", hwSettings.serialPortBaudRate);
+        iniConfObj.setProperty("inverter.serialPort", hwSettings.serialPort);
 
-        OutputStream outputStream = new FileOutputStream(new File(configurationFileName));
-        merged.store(outputStream, "");
-        outputStream.close();
+        iniConfObj.save();
+
 
     }
 
-    protected String execInverterCommand(Map<String, String> map) {
+    public void saveConfiguration() throws IOException, ConfigurationException {
 
-        String opCodeParameter = map.get("opcode");
-        String subCodeParameter = map.get("subcode");
-        int addressParameter = Integer.parseInt(map.get("address"));
-        hwSettings.inverterAddress = addressParameter;
-        String responseString = "";
-        AuroraResponse auroraResponse = null;
-        try {
-            switch (opCodeParameter) {
-                case "dspData":
-                    responseString = execDspDataInverterCommand(subCodeParameter, addressParameter);
-                    break;
-                case "cumEnergy":
-                    responseString = execCumEnergyInverterCommand(subCodeParameter, addressParameter);
-                    break;
-                case "productNumber":
-                    auroraResponse = auroraDriver.acquireProductNumber(addressParameter);
-                    break;
-                case "serialNumber":
-                    auroraResponse = auroraDriver.acquireSerialNumber(addressParameter);
-                    break;
-                case "versionNumber":
-                    auroraResponse = auroraDriver.acquireVersionId(addressParameter);
-                    break;
-                case "firmwareNumber":
-                    auroraResponse = auroraDriver.acquireFirmwareVersion(addressParameter);
-                    break;
-                case "manufacturingDate":
-                    auroraResponse = auroraDriver.acquireMFGdate(addressParameter);
-                    break;
-                case "sysConfig":
-                    auroraResponse = auroraDriver.acquireSystemConfig(addressParameter);
-                    break;
-                case "timeCounter":
-                    auroraResponse = auroraDriver.acquireTimeCounter(addressParameter);
-                    break;
-                case "actualTime":
-                    auroraResponse = auroraDriver.acquireActualTime(addressParameter);
-                    break;
-                default:
-                    responseString = "Error: bad request";
-            }
+        HierarchicalINIConfiguration iniConfObj = new HierarchicalINIConfiguration(configurationFileName);
+        iniConfObj.setProperty("monitor.inverterInterrogationPeriodSec", settings.inverterInterrogationPeriodSec);
+        iniConfObj.setProperty("monitor.energyEstimationEnable", settings.energyEstimationEnable);
 
-        } catch (Exception e) {
-            responseString = "ERROR!: " + e.getMessage();
-        }
-        if (responseString.isEmpty()) {
-            if (auroraResponse == null) {
-                responseString = "UNKNOWN ERROR!";
-            } else {
-                responseString = auroraResponse.getErrorCode() == ResponseErrorEnum.NONE ? auroraResponse.toString() : auroraResponse.getErrorCode().toString() + " ERROR";
-                updateInverterStatus(auroraResponse.getErrorCode() != ResponseErrorEnum.TIMEOUT);
-            }
-        }
-
-        return responseString;
-    }
+        iniConfObj.save();
 
 
-    protected String execCumEnergyInverterCommand(String subCodeParameter, int addressParameter) {
-        AuroraResponse auroraResponse = null;
-        String errorString = "UNKNOWN ERROR!";
-        AuroraCumEnergyEnum cumEnergyEnum = mapEnergyCmd.get(subCodeParameter);
-        try {
-            auroraResponse = auroraDriver.acquireCumulatedEnergy(addressParameter, cumEnergyEnum);
-
-        } catch (Exception e) {
-            errorString = "ERROR! " + e.getMessage();
-        }
-        return auroraResponse == null ? errorString : auroraResponse.toString();
-    }
-
-    protected String execDspDataInverterCommand(String subCodeParameter, int addressParameter) {
-        AuroraResponse auroraResponse = null;
-        String errorString = "UNKNOWN ERROR!";
-        AuroraDspRequestEnum dspRequestEnum = mapDspCmd.get(subCodeParameter);
-        try {
-            auroraResponse = auroraDriver.acquireDspValue(addressParameter, dspRequestEnum);
-
-        } catch (Exception e) {
-            errorString = "ERROR! " + e.getMessage();
-        }
-        return auroraResponse == null ? errorString : auroraResponse.toString();
-    }
-
-    public String execCommand(MonCmdLoadConfig cmd) throws IOException {
-        String result = "";
-        pvOutputParams = loadPvOutputConfiguration();
-        Map<String, Object> mapPvOutParameters = getPvOutputParametersMap();
-        Map<String, Object> mapSettings = getSettingsMap();
-        Map<String, Object> allParameters = new HashMap();
-        allParameters.putAll(mapPvOutParameters);
-        allParameters.putAll(mapSettings);
-        Gson gson = new Gson();
-        return gson.toJson(allParameters);
-    }
-
-    public String execCommand(MonCmdSavePvOutputConfig cmd) throws IOException {
-        String result = "";
-        setPvOutputApiKey(cmd.command.get("pvOutputApiKey"));
-        setPvOutputUrl(cmd.command.get("pvOutputUrl"));
-        //setPvOutputPeriod(Float.valueOf(cmd.command.get("pvOutputPeriod")));
-        setPvOutputSystemId(Integer.valueOf(cmd.command.get("pvOutputSystemId")));
-        savePvOutputConfiguration();
-        result = "{response : OK}";
-        return result;
-    }
-
-    public String execCommand(MonCmdSaveSettings cmd) throws IOException {
-        String result = "";
-        setSerialPortBaudRate(Integer.valueOf(cmd.command.get("baudRate")));
-        setSerialPortName(cmd.command.get("serialPort"));
-        setInverterAddress(Integer.valueOf(cmd.command.get("inverterAddress")));
-
-        savePvOutputConfiguration();
-        result = "{response : OK}";
-        return result;
-    }
-
-
-    public String execCommand(MonCmdInverter cmd) throws IOException {
-        String result = "";
-
-        result = execInverterCommand(cmd.command);
-
-        return result;
-    }
-
-    public String execCommand(MonCmdTestPVoutput cmd) throws IOException {
-        String result = "";
-        setPvOutputApiKey(cmd.command.get("pvOutputApiKey"));
-        setPvOutputUrl(cmd.command.get("pvOutputUrl"));
-//        setPvOutputPeriod(Integer.valueOf(cmd.command.get("pvOutputPeriod")));
-        setPvOutputSystemId(Integer.valueOf(cmd.command.get("pvOutputSystemId")));
-        result = FormatStringUtils.jsonResult(testPvOutputServer());
-        return result;
     }
 
     private Map<String, Object> getSettingsMap() {
@@ -680,76 +161,11 @@ public class AuroraMonitor {
         return result;
     }
 
-    private Map<String, Object> getPvOutputParametersMap() {
-        Map<String, Object> result = new HashMap();
-        result.put("pvOutputApiKey", getPvOutputApiKey());
-        result.put("pvOutputPeriod", getPvOutputPeriod());
-        result.put("pvOutputSystemId", getPvOutputSystemId());
-        result.put("pvOutputUrl", getPvOutputUrl());
-        return result;
-    }
-
-    public void pvOutputjob() {
-        try {
-            log.finer("PVoutputJob restarted.");
-            Date actualDate = new Date();
-            if (!MyUtils.sameDay(actualDate, lastCheckDate)) {
-                dailyCumulatedEnergy = 0;
-            }
-            lastCheckDate = actualDate;
-            checkInverterStatus();
-            if (isInverterOnline()) {
-                boolean dataAcquisitionSuccessful = acquireDataToBePublished();
-                if (dataAcquisitionSuccessful) {
-                    publish2PvOutput();
-                } else {
-                    log.warning("Periodic data publication to PVOutput skipped because inverter is OFFLINE.");
-                }
-            } else {
-                log.info("Inverter not online, status: " + inverterStatus);
-                String pvOutputFileData = MyUtils.selectFirstFile(pvOutputDataDirectoryPath, ".csv");
-                if (pvOutputFileData.isEmpty()) {
-                    log.fine("No backup file found to upload to PvOutput in: " + pvOutputDataDirectoryPath);
-                } else {
-                    batchPublish2PvOutput(pvOutputFileData);
-                }
-            }
-        } catch (Exception e) {
-            log.severe("Executing periodic data publication to PVOutput: " + e.getMessage());
-        }
-
-    }
-
-
-    public void startPvOutput() {
-
-        if (pvOutputRunning)
-        {
-            return;
-        }
-        pvOutputRunning = true;
-
-        ScheduledExecutorService serviceExec = Executors.newScheduledThreadPool(1);
-
-        long millisecPeriod = (long) (getPvOutputPeriod() * 1000);
-        pvOutputFeature = serviceExec.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                log.info("Thread in charge of pvoutput data publishing is: "+Thread.currentThread().getName());
-                pvOutputRunning = true;
-                pvOutputjob();
-                log.finer("Job terminated");
-            }
-        }, 0, millisecPeriod, TimeUnit.MILLISECONDS);
-
-        log.info("Publication job to PVOutput Started with period (ms): " + millisecPeriod);
-
-    }
 
     public void checkInverterStatus() {
 
         AuroraResponse badResult = new AResp_VersionId();
-        badResult.setErrorCode(ResponseErrorEnum.UNKNOWN);
+        badResult.setErrorCode(UNKNOWN);
 
         AuroraResponse result;
         try {
@@ -761,42 +177,32 @@ public class AuroraMonitor {
         result = result == null ? badResult : result;
 
         log.fine("Check Status Result: " + result.getErrorCode());
-        updateInverterStatus(result.getErrorCode() == ResponseErrorEnum.CRC || result.getErrorCode() == ResponseErrorEnum.NONE);
+        updateInverterStatus(result.getErrorCode());
 
 
     }
 
-    private void updateInverterStatus(boolean acquisitionSuccessfull) {
+    private void updateInverterStatus(ResponseErrorEnum acquisitionOutcome) {
 
+        boolean correct = (acquisitionOutcome == NONE);
         switch (inverterStatus) {
             case OFFLINE:
-                inverterStatus = acquisitionSuccessfull ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
+                inverterStatus = correct ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
                 break;
             case ONLINE:
-                inverterStatus = acquisitionSuccessfull ? InverterStatusEnum.ONLINE : InverterStatusEnum.UNCERTAIN;
+                inverterStatus = correct ? InverterStatusEnum.ONLINE : InverterStatusEnum.UNCERTAIN;
                 break;
             case UNCERTAIN:
-                inverterStatus = acquisitionSuccessfull ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
+                inverterStatus = correct ? InverterStatusEnum.ONLINE : InverterStatusEnum.OFFLINE;
                 break;
 
         }
         log.info("Inverter Status is :" + inverterStatus);
     }
 
-    public void stopPvOutput() {
-
-
-        if (pvOutputFeature != null) {
-            pvOutputFeature.cancel(true);
-            pvOutputRunning = false;
-        }
-        log.info("Publication job to PVOutput Stopped.");
-
-    }
 
     public void stop() {
         auroraDriver.stop();
-        stopPvOutput();
     }
 
     public boolean isInverterOnline() {
@@ -834,57 +240,293 @@ public class AuroraMonitor {
         hwSettings.inverterAddress = aInverterAddress;
     }
 
-    public String savePvOutputRecord(PvOutputRecord pvData) throws IOException {
-
-        String[] values = new String[5];
-        values[0] = Long.toString(pvData.timestamp);
-        values[1] = Float.toString(pvData.dailyCumulatedEnergy);
-        values[2] = Float.toString(pvData.totalPowerGenerated);
-        values[3] = Float.toString(pvData.temperature);
-        values[4] = Float.toString(pvData.totalGridVoltage);
-
-        Date actualDate = new Date(pvData.timestamp);
-        String fileName = FormatStringUtils.fromDate(actualDate);
-        fileName = pvOutputDataDirectoryPath + File.separator + fileName + ".csv";
-        BufferedWriter out = new BufferedWriter(new FileWriter(fileName, true));
-        CSVWriter writer = new CSVWriter(out, ',', CSVWriter.NO_QUOTE_CHARACTER);
-        writer.writeNext(values);
-        out.close();
-        log.info("PVOutput data saved in: " + fileName);
-        return fileName;
+    public void setInverterInterrogationPeriod(float inverterQueryPeriodSec) {
+        settings.inverterInterrogationPeriodSec = inverterQueryPeriodSec;
     }
 
-    public static List<PvOutputRecord> readPvOutputRecordSet(String filePath) throws IOException {
+    public void setDailyCumulatedEnergyEstimationFeature(boolean value) {
+        settings.energyEstimationEnable = value;
+    }
 
-        List<PvOutputRecord> pvOutputRecordList = new ArrayList<>();
+    public float getInverterInterrogationPeriod() {
+        return settings.inverterInterrogationPeriodSec;
+    }
 
-        CSVReader reader = new CSVReader(new FileReader(filePath), ',');
-        List<String[]> allRows = reader.readAll();
 
-        for (String[] rec : allRows) {
-            if (rec.length == 5) {
-                PvOutputRecord pvOutputRecord = new PvOutputRecord();
-                pvOutputRecord.timestamp = Long.decode(rec[0]);
-                pvOutputRecord.dailyCumulatedEnergy = Float.parseFloat(rec[1]);
-                pvOutputRecord.totalPowerGenerated = Float.parseFloat(rec[2]);
-                pvOutputRecord.temperature = Float.parseFloat(rec[3]);
-                pvOutputRecord.totalGridVoltage = Float.parseFloat(rec[4]);
-                pvOutputRecordList.add(pvOutputRecord);
-            }
+    public float acquireInverterMeasure(String cmdCode, String cmdOpCode) throws InverterCRCException {
+
+        float measure = 0;
+        EBInverterRequest ebInverterRequest = new EBInverterRequest(cmdCode, cmdOpCode, hwSettings.inverterAddress);
+        theEventBus.post(ebInverterRequest);
+        if (ebInverterRequest.getResponse() instanceof EBResponseOK) {
+            EBResponseOK ebResponse = (EBResponseOK) ebInverterRequest.getResponse();
+            measure = Float.parseFloat((String) ebResponse.data);
+            return measure;
+        } else {
+            EBResponseNOK ebResponseNOK = (EBResponseNOK) ebInverterRequest.getResponse();
+            ResponseErrorEnum error = fromCode(ebResponseNOK.error.code);
+
+            throw new InverterCRCException("Crc Error Executing Command (" + cmdCode + "," + cmdOpCode + ")");
+
+
         }
 
-        return pvOutputRecordList;
+    }
+
+    public PeriodicInverterTelemetries acquireDataToBePublished() throws InverterCRCException, InverterTimeoutException {
+
+        log.info("Starting data acquisition from inverter");
+
+        PeriodicInverterTelemetries result = new PeriodicInverterTelemetries();
+
+        result.gridPowerAll = acquireInverterMeasure("dspData", "gridPowerAll");
+
+        result.cumulatedEnergy = acquireInverterMeasure("cumEnergy", "daily");
+
+        result.gridVoltageAll = acquireInverterMeasure("dspData", "gridVoltageAll");
+
+        result.inverterTemp = acquireInverterMeasure("dspData", "inverterTemp");
+
+
+        float deltaT = new Date().getTime() - result.timestamp;
+        deltaT /= 1000;
+        log.info("Data acquisition from inverter completed in " + deltaT + " sec: " + result);
+
+
+        return result;
 
     }
 
-    public String execCommand(MonCmdReadStatus cmd) {
-        Map<String, String> mapResult = new HashMap<>();
-        String pvStatus =  getPvOutputRunningStatus() ? "on" : "off";
-        String inverterStatus =  isInverterOnline() ? "online" : "offline";
-        mapResult.put("pvOutputStatus",pvStatus);
-        mapResult.put("inverterStatus",inverterStatus);
 
-        return new Gson().toJson(mapResult);
+    public void start() {
+        Timer timer = new Timer(true);
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                log.info("Timer expired, sending start message");
+                MonitorMsgStarted msgStarted = new MonitorMsgStarted();
+                try {
+                    log.info("Sending msg: " + msgStarted);
+                    theEventBus.post(msgStarted);
+                    log.info("Sent msg: " + msgStarted);
+                } catch (Exception e) {
+                    log.severe("Error sending msg: " + msgStarted + ", " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }, 60 * 1000);
+
+        log.info("Timer armed, 60 secs to start msg");
+
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+
+                        Date actualDate = new Date();
+                        if (!MyUtils.sameDay(actualDate, lastCheckDate)) {
+                            dailyCumulatedEnergy = 0;
+                            telemetriesQueue.clear();
+                            dailyPeekPower = 0;
+                            log.info("It's a new day: Cumulated Energy RESET!");
+                        }
+                        lastCheckDate = actualDate;
+
+                        log.info("Acquiring new data from inverter...");
+                        PeriodicInverterTelemetries telemetries = acquireDataToBePublished();
+                        updateInverterStatus(NONE);
+
+                        boolean newMaximum = telemetries.gridPowerAll > dailyPeekPower;
+                        if (newMaximum) {
+                            dailyPeekPower = telemetries.gridPowerAll;
+                            dailyPeekPowerTime = telemetries.timestamp;
+                            dailyPeekPowerSent = false;
+                            log.info("New daily peek power: " + dailyPeekPower);
+
+                        }
+
+                        Calendar c = Calendar.getInstance();
+                        long now = c.getTimeInMillis();
+                        c.set(Calendar.HOUR_OF_DAY, 0);
+                        c.set(Calendar.MINUTE, 0);
+                        c.set(Calendar.SECOND, 0);
+                        c.set(Calendar.MILLISECOND, 0);
+                        long passed = now - c.getTimeInMillis();
+                        long secondsPassed = passed / 1000;
+
+
+                        if (secondsPassed > 3600 * 14 && (!dailyPeekPowerSent || newMaximum)) {
+                            log.fine("It's time to send a Peek Power " + dailyPeekPower);
+                            dailyPeekPowerSent = true;
+                            MonitorMsgDailyMaxPower monitorMsgDailyMaxPower = new MonitorMsgDailyMaxPower(dailyPeekPower, dailyPeekPowerTime);
+                            theEventBus.post(monitorMsgDailyMaxPower);
+                            log.info("Sent Msg: " + monitorMsgDailyMaxPower);
+                        }
+
+
+                        // fix energy calcutation when 0
+                        telemetriesQueue.add(telemetries);
+                        PeriodicInverterTelemetries fixedTelemetries = telemetriesQueue.fixedAverage();
+                        dailyCumulatedEnergy += fixedTelemetries.cumulatedEnergy;
+                        log.info("Energy Estimation (Wh), Measured: " + telemetries.cumulatedEnergy + ", Estimated: " + dailyCumulatedEnergy + ", difference: " + (telemetries.cumulatedEnergy - dailyCumulatedEnergy));
+                        if (settings.energyEstimationEnable) {
+                            log.info("Fixed Energy calculation, Last One: " + fixedTelemetries.cumulatedEnergy + ", Day Total: " + dailyCumulatedEnergy);
+                            telemetries.cumulatedEnergy = dailyCumulatedEnergy;
+                        }
+
+                        theEventBus.post(telemetries);
+                    } catch (InverterCRCException e) {
+                        updateInverterStatus(CRC);
+                    } catch (InverterTimeoutException e) {
+                        updateInverterStatus(TIMEOUT);
+                    } catch (Exception e) {
+                       log.severe(e.getMessage());
+
+                    } finally {
+                        try {
+                            long time2wait = (long) (settings.inverterInterrogationPeriodSec * 1000);
+                            switch (inverterStatus) {
+                                case ONLINE:
+                                    theEventBus.post(new MonitorMsgInverterStatus(true));
+                                    break;
+                                case OFFLINE:
+                                    theEventBus.post(new MonitorMsgInverterStatus(false));
+                                    break;
+                            }
+                            Thread.sleep(time2wait);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+            }
+        }).start();
+
+    }
+
+    @Subscribe
+
+    public void handle(MonReqSaveInvSettings cmd) {
+
+        EBResponse ebResponse = null;
+
+        try {
+
+            HwSettings newSettings = new Gson().fromJson(cmd.jsonParams, HwSettings.class);
+
+            setSerialPortBaudRate(newSettings.serialPortBaudRate);
+            setSerialPortName(newSettings.serialPort);
+            setInverterAddress(newSettings.inverterAddress);
+            init();
+            saveHwSettingsConfiguration();
+
+            ebResponse = new EBResponseOK(hwSettings);
+
+
+        } catch (Exception e) {
+            String errorString = "Could not execute Request: " + cmd.getClass().getCanonicalName() + ", " + e.getMessage();
+            ebResponse = new EBResponseNOK(-1, errorString);
+        }
+
+        cmd.response = ebResponse;
+
+    }
+
+    @Subscribe
+
+    public void handle(MonReqLoadInvSettings cmd) {
+
+        EBResponse ebResponse = null;
+
+        try {
+
+
+            ebResponse = new EBResponseOK(hwSettings);
+
+
+        } catch (Exception e) {
+            String errorString = "Could not execute Request: " + cmd.getClass().getCanonicalName() + ", " + e.getMessage();
+            ebResponse = new EBResponseNOK(-1, errorString);
+        }
+
+        cmd.response = ebResponse;
+
+    }
+
+    @Subscribe
+    public void execCommand(MonCmdReadStatus cmd) {
+        EBResponse ebResponse = null;
+
+        try {
+            checkInverterStatus();
+            String inverterStatus = isInverterOnline() ? "online" : "offline";
+            ebResponse = new EBResponseOK(inverterStatus);
+
+        } catch (Exception ex) {
+            cmd.response = new EBResponseNOK(-1, ex.getMessage());
+
+        }
+        cmd.response = ebResponse;
+
+    }
+
+    public static void main(String[] args) throws Exception {
+
+        Logger log = Logger.getLogger("mainLogger");
+        String configurationFileName = "aurora.cfg";
+        String logDirectoryPath = "log";
+        String workingDirectory = ".";
+        String webDirectory = "html/";
+        if (args.length > 0) {
+            workingDirectory = args[0];
+            webDirectory = args[1];
+        }
+
+        configurationFileName = workingDirectory + File.separator + "config" + File.separator + configurationFileName;
+        logDirectoryPath = workingDirectory + File.separator + logDirectoryPath;
+
+
+        try {
+//        String serialPort = "/dev/ttys002";
+            String webDirectoryPath = workingDirectory + File.separator + webDirectory;
+//        String serialPort = "/dev/ttys001";
+
+            log.info("Creating Aurora Driver...");
+            AuroraDriver auroraDriver = new AuroraDriver(null, new AuroraRequestFactory(), new AuroraResponseFactory());
+
+
+            log.info("Creating Aurora Monitor...New2");
+            EventBus theEventBus = new EventBus();
+
+            TelegramPlg telegramPlg = new TelegramPlg(theEventBus);
+            telegramPlg.setExePath("/home/pi/tg/bin/telegram-cli");
+            telegramPlg.setDestinationContact("Stefano_Brega");
+
+            AuroraMonitor auroraMonitor = new AuroraMonitor(theEventBus, auroraDriver, configurationFileName, logDirectoryPath);
+            EventBusInverterAdapter eventBusInverterAdapter = new EventBusInverterAdapter(theEventBus, auroraDriver, new InverterCommandFactory());
+            auroraMonitor.init();
+            auroraMonitor.start();
+            PvOutputNew pvOutput = new PvOutputNew(configurationFileName, theEventBus);
+            pvOutput.start();
+
+
+            log.info("Creating Web Server...");
+            AuroraWebServer auroraWebServer = new AuroraWebServer(8000, webDirectoryPath, theEventBus);
+            log.info("Starting Web Server...");
+            new Thread(auroraWebServer).start();
+            Thread.sleep(1000);
+        } catch (Exception ex) {
+            System.out.println("Error at startup: " + ex.getMessage());
+            log.severe("Fatal error at startup: " + ex.getMessage());
+        }
+
+    }
+
+    public boolean getDailyCumulatedEnergyEstimationFeature() {
+        return settings.energyEstimationEnable;
     }
 }
 

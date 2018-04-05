@@ -84,6 +84,7 @@
                             <button type="button" class="btn btn-default" data-opcode='timeCounter'>Time Counter
                             </button>
                             <button type="button" class="btn btn-default" data-opcode='actualTime'>Actual Time</button>
+                            <button type="button" class="btn btn-default" data-opcode='lastAlarms'>Last Alarms</button>
                             <div class="btn-group">
                                 <button type="button" class="btn  dropdown-toggle btn-default" data-toggle="dropdown">
                                     DSP Data <span class="caret"></span>
@@ -223,13 +224,10 @@
                     <div class="col-md-4">
                         <button type="button" id="btnPVoutSave" class="btn btn-default btn-lg small">Save</button>
                         <button type="button" id="btnPVoutTest" class="btn btn-default btn-lg small">Test</button>
-                        <div class="btn-group btn-group-lg" data-toggle="buttons-radio">
-                            <button id="btnPVoutStop" class="btn btn-default active"><i
-                                    class="glyphicon glyphicon-stop"></i>
-                            </button>
-                            <button id="btnPVoutStart" class="btn btn-default"><i class="glyphicon glyphicon-play"></i>
-                            </button>
-                        </div>
+                        <button type="button" id="btnPVoutStop" class="btn btn-default btn-lg small"><i
+                                class="glyphicon glyphicon-stop"></i></button>
+                        <button type="button" id="btnPVoutStart" class="btn btn-default btn-lg small"><i
+                                class="glyphicon glyphicon-play"></i></button>
                     </div>
                 </div>
             </div>
@@ -290,111 +288,9 @@
 <!-- Boostrap -->
 <script src="/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
 
+
+
 <script type="text/javascript">
-    jQuery(document).ready(function () {
-        console.log("partito");
-        $("#tabs").tab();
-        $("#tabs a").click(function (e) {
-            e.preventDefault();
-            console.log("premuto " + this);
-            $(this).tab('show');
-        });
-
-
-        // inizializzaizione bottoni
-        $('button[data-opcode]').each(function() {
-            $(this).click( function() {
-                // When the button is clicked, it runs this code.
-
-                el = $(this);
-
-                var cmd = {};
-                var opcode = $(this).attr('data-opcode');
-                var subcode =  $(this).attr('data-subcode');
-                cmd['opcode'] = opcode;
-                if (subcode != null) {
-                    cmd['subcode'] = subcode;
-                }
-                var address = $("#invaddress").val();
-                cmd['address'] = address;
-
-                sendInvCommand(cmd);
-                console.log("Listener fired on button "+$(this).attr('data-opcode'));
-            });
-        });
-
-        // bottone PVOutput stop
-        $("#btnPVoutStop").click(function() {
-            console.log("Stop button pressed");
-
-
-            if ($(this).attr("class").indexOf("active")>-1) {
-                console.log("Button already pressed nothing to do");
-            } else {
-                sendPvOutputStopCommand();
-
-            }
-
-        });
-
-        // botton PVOutput save
-        $("#btnPVoutSave").click(function(){
-            console.log("Save button pressed");
-            sendSaveCfgCommand();
-        });
-
-
-        // botton PVOutput start
-        $("#btnPVoutStart").click(function() {
-            console.log("Play button pressed");
-            var thisButton = $(this);
-
-            if ($(this).attr("class").indexOf("active")>-1) {
-                console.log("Button already pressed nothing to do");
-            } else {
-                sendPvOutputStartCommand() ;
-            }
-
-        });
-
-
-        // botton PVOutput Test
-        $("#btnPVoutTest").click( function() {
-            console.log("Test button pressed");
-            var thisButton = $(this);
-
-            sendPvOutputTestCommand().done(function(result) {
-                console.log("responseString :"+result);
-                var cl = thisButton.attr("class");
-                if (result['result'] == 'OK') {
-                    thisButton.attr("class", cl+" btn-danger");
-                } else {
-                    thisButton.attr("class", cl+" btn-success");
-                }
-                setTimeout(function(){
-                    thisButton.attr("class", cl)
-                },1000);
-
-            });
-
-        });
-
-        $("#btnSaveSettings").click(function(){
-            console.log("Button btnSaveSettings pressed");
-            sendSaveSettings();
-
-        });
-
-
-        window.setTimeout(sendLoadStatusCommand, 30000);
-        sendLoadStatusCommand();
-        sendLoadCfgCommand();
-
-    });
-</script>
-
-<script>
-
 
 
     function setInverterOnline() {
@@ -416,7 +312,6 @@
         if (isRunning) {
             btnStart.addClass("active");
             btnStop.removeClass("active");
-
         }
         else {
             btnStop.addClass("active");
@@ -426,15 +321,16 @@
 
     }
 
+
     function createPVoutParamsQueryString() {
 
 
         var periodBtnActive = $('[id^="btnPeriod"] [active]').first();
 
         var data = {
-            pvOutputApiKey:$("#txtAPIkey").val(),
-            pvOutputSystemId:$("#txtSystemId").val() ,
-            pvOutputUrl:$("#txtPVoutUrl").val()
+            pvOutputApiKey: $("#txtAPIkey").val(),
+            pvOutputSystemId: $("#txtSystemId").val(),
+            pvOutputUrl: $("#txtPVoutUrl").val()
 //            pvOutputPeriod:periodBtnActive.text()
         };
 
@@ -448,15 +344,23 @@
     function sendInvCommand(cmd) {
         var dataUrl = '/cmd/inv?';
 
-        var urlString = dataUrl+$.param(cmd);
-        console.log('urlString '+urlString);
+        var urlString = dataUrl + $.param(cmd);
+        console.log('urlString ' + urlString);
         $.get(urlString, function (msg, status) {
 
             console.log("Response received: " + msg);
-            console.log("Executed command: "+urlString +" with response: "+status);
-            textOutput =  $("#areaResult").text();
+            console.log("Executed command: " + urlString + " with response: " + status);
+            textOutput = $("#areaResult").text();
             if (textOutput != null) {
-                $("#areaResult").text(msg+textOutput);
+                var dispValue;
+                var jsonMsg = JSON.parse(msg);
+                if ("error" in jsonMsg) {
+                    dispValue = "ERROR: " + jsonMsg.error.message;
+                }
+                else {
+                    dispValue = jsonMsg.data;
+                }
+                $("#areaResult").text(dispValue + "\n" + textOutput);
 
             }
 
@@ -467,42 +371,50 @@
     }
 
     function sendPvOutputTestCommand() {
-        var urlString = '/cmd/pvOutputTest';
+        var urlString = '/pvoutput?opcode=test';
 
-        var encodedData = createPVoutParamsQueryString();
-
-        urlString = urlString+"?"+encodedData;
-        console.log('urlString '+urlString);
-        console.log("PVoutput text executed");
+        console.log('urlString ' + urlString);
+        console.log("PVoutput test executed");
 
         return $.get(urlString);
 
     }
 
     function sendSaveCfgCommand() {
-        var urlString = '/cmd/saveCfg?';
+        var urlString = '/pvoutput';
 
         var cmdMap = {};
-        cmdMap["pvOutputApiKey"] = $("#txtAPIkey").val();
-        cmdMap["pvOutputSystemId"] = $("#txtSystemId").val();
-        cmdMap["pvOutputUrl"] = $("#txtPVoutUrl").val();
+        cmdMap["opcode"] = "save";
+        cmdMap["apiKey"] = $("#txtAPIkey").val();
+        cmdMap["systemId"] = $("#txtSystemId").val();
+        cmdMap["url"] = $("#txtPVoutUrl").val();
+        cmdMap["period"] = "300";
+        cmdMap["timeWindowSec"] = "300";
 
-        urlString = urlString+ $.param(cmdMap);
-        console.log('urlString '+urlString);
+        urlString = urlString + "?"+$.param(cmdMap);
+        console.log('urlString ' + urlString);
         console.log("PVoutput settings saved");
 
         $.get(urlString, function (msg, status) {
+            var jsonResponse = JSON.parse(msg);
 
-            console.log("Response received: " + msg);
-            console.log("Executed command: "+urlString +" with response: "+status);
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var responseBody = jsonResponse.data;
+                console.log("Received  response: "+responseBody)
+
+
+            }
 
         });
 
     }
 
-    function sendSaveSettings(){
+    function sendSaveSettings() {
 
-        var urlString = '/cmd/saveSettings?';
+        var urlString = '/cmd/saveInvSettings?';
 
         var cmdMap = {};
 
@@ -510,48 +422,61 @@
         cmdMap["baudRate"] = $("#txtBaudRate").val();
         cmdMap["inverterAddress"] = $("#txtInvAddress").val();
 
-        urlString = urlString+ $.param(cmdMap);
-        console.log('urlString '+urlString);
+        urlString = urlString + $.param(cmdMap);
+        console.log('urlString ' + urlString);
         console.log("PVoutput settings saved");
 
         $.get(urlString, function (msg, status) {
 
             console.log("Response received: " + msg);
-            console.log("Executed command: "+urlString +" with response: "+status);
+            console.log("Executed command: " + urlString + " with response: " + status);
 
         });
 
     }
 
     function sendPvOutputStopCommand() {
-        var urlString = '/cmd/pvOutputStop';
+        var urlString = '/pvoutput?opcode=stop';
 
 
         console.log('urlString ' + urlString);
         $.get(urlString, function (msg, status) {
 
             console.log("Response received: " + msg);
-            console.log("Executed command: "+urlString +" with response: "+status);
-
+            var jsonResponse = JSON.parse(msg);
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var data = jsonResponse.data;
+                console.log("Stop Request Successfully executed:")
+            }
         });
+
 
     }
 
     function sendPvOutputStartCommand() {
-        var urlString = '/cmd/pvOutputStart';
+        var urlString = '/pvoutput?opcode=start';
 
 
         console.log('urlString ' + urlString);
         $.get(urlString, function (msg, status) {
 
             console.log("Response received: " + msg);
-            console.log("Executed command: "+urlString +" with response: "+status);
-
+            var jsonResponse = JSON.parse(msg);
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var data = jsonResponse.data;
+                console.log("Start Request Successfully executed:")
+            }
         });
 
     }
 
-    function sendLoadStatusCommand() {
+    function sendLoadInvStatusCommand() {
         var urlString = '/cmd/status';
 
 
@@ -559,41 +484,202 @@
         $.get(urlString, function (msg, status) {
 
             console.log("Response received: " + msg);
-            var params = JSON.parse(msg);
+            var jsonResponse = JSON.parse(msg);
 
-            var invStatus = params["inverterStatus"];
-            var pvOutputStatus = params["pvOutputStatus"];
-
-            setPvOutputRunning(pvOutputStatus == "on");
-
-            if (invStatus == "online") {
-
-                setInverterOnline();
-            } else {
-                setInverterOffline();
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
             }
+            else {
+                var invStatus = jsonResponse.data;
+
+
+//                setPvOutputRunning(pvOutputStatus == "on");
+
+                if (invStatus == "online") {
+                    setInverterOnline();
+                } else {
+                    setInverterOffline();
+                }
+            }
+
         });
 
     }
 
-    function sendLoadCfgCommand() {
-        var urlString = '/cmd/loadCfg';
+    function sendLoadPvoutputStatusCommand() {
+        var urlString = '/pvoutput?opcode=status';
+
 
         console.log('urlString ' + urlString);
         $.get(urlString, function (msg, status) {
 
             console.log("Response received: " + msg);
-            var params = JSON.parse(msg);
-            $("#txtPVoutUrl").val(params["pvOutputUrl"]);
-            $("#txtAPIkey").val(params["pvOutputApiKey"]);
-            $("#txtSystemId").val(params["pvOutputSystemId"]);
-            $("#txtSerialPort").val(params["serialPort"]);
-            $("#txtBaudRate").val(params["baudRate"]);
-            $("#txtInvAddress").val(params["inverterAddress"]);
+            var jsonResponse = JSON.parse(msg);
+
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var pvOutputStatus = jsonResponse.data;
+
+                setPvOutputRunning(pvOutputStatus == "on");
+
+            }
+
         });
 
     }
+
+    function sendLoadInvCfgCommand() {
+        var urlString = '/cmd/loadInvSettings';
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var jsonResponse = JSON.parse(msg);
+            if ("error" in jsonResponse) {
+                   console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var data = jsonResponse.data;
+                $("#txtSerialPort").val(data["serialPort"]);
+                $("#txtBaudRate").val(data["serialPortBaudRate"]);
+                $("#txtInvAddress").val(data["inverterAddress"]);
+            }
+        });
+
+    }
+    function sendLoadPvOutputSettingsCommand() {
+        var urlString = '/pvoutput?opcode=read';
+
+        console.log('urlString ' + urlString);
+        $.get(urlString, function (msg, status) {
+
+            console.log("Response received: " + msg);
+            var jsonResponse = JSON.parse(msg);
+            if ("error" in jsonResponse) {
+                console.log("Received error response: "+jsonResponse)
+            }
+            else {
+                var data = jsonResponse.data;
+                $("#txtPVoutUrl").val(data["url"]);
+                $("#txtAPIkey").val(data["apiKey"]);
+                $("#txtSystemId").val(data["systemId"]);
+            }
+        });
+    }
+
+
 </script>
+
+<script type="text/javascript">
+    jQuery(document).ready(function () {
+        console.log("partito");
+        $("#tabs").tab();
+        $("#tabs a").click(function (e) {
+            e.preventDefault();
+            console.log("premuto " + this);
+            $(this).tab('show');
+        });
+
+
+        // inizializzazione bottoni
+        $('button[data-opcode]').each(function () {
+            $(this).click(function () {
+                // When the button is clicked, it runs this code.
+
+                el = $(this);
+
+                var cmd = {};
+                var opcode = $(this).attr('data-opcode');
+                var subcode = $(this).attr('data-subcode');
+                cmd['opcode'] = opcode;
+                if (subcode != null) {
+                    cmd['subcode'] = subcode;
+                }
+                var address = $("#invaddress").val();
+                cmd['address'] = address;
+
+                sendInvCommand(cmd);
+                console.log("Listener fired on button " + $(this).attr('data-opcode'));
+            });
+        });
+
+        // bottone PVOutput stop
+        $("#btnPVoutStop").click(function (event) {
+            console.log("Stop button pressed");
+
+            if ($(this).attr("class").indexOf("active") > -1) {
+                console.log("Button already pressed nothing to do");
+            } else {
+                sendPvOutputStopCommand();
+                setPvOutputRunning(false);
+            }
+
+        });
+
+
+        // botton PVOutput start
+        $("#btnPVoutStart").click(function (event) {
+            console.log("Play button pressed");
+            var thisButton = $(this);
+
+            if ($(this).attr("class").indexOf("active") > -1) {
+                console.log("Button already pressed nothing to do");
+            } else {
+                sendPvOutputStartCommand();
+                setPvOutputRunning(true)
+            }
+
+        });
+
+        // botton PVOutput save
+        $("#btnPVoutSave").click(function () {
+            console.log("Save button pressed");
+            sendSaveCfgCommand();
+        });
+
+
+        // botton PVOutput Test
+        $("#btnPVoutTest").click(function () {
+            console.log("Test button pressed");
+            var thisButton = $(this);
+
+            sendPvOutputTestCommand().done(function (result) {
+                console.log("responseString :" + result);
+                var cl = thisButton.attr("class");
+                var jsonResponse = JSON.parse(result);
+
+                if ("error" in jsonResponse) {
+                    thisButton.attr("class", cl + " btn-danger");
+                } else {
+                    thisButton.attr("class", cl + " btn-success");
+                }
+                setTimeout(function () {
+                    thisButton.attr("class", cl)
+                }, 1000);
+
+            });
+
+        });
+
+        $("#btnSaveSettings").click(function () {
+            console.log("Button btnSaveSettings pressed");
+            sendSaveSettings();
+
+        });
+
+
+        window.setInterval(sendLoadInvStatusCommand, 30000);
+        sendLoadInvStatusCommand();
+        sendLoadInvCfgCommand();
+        sendLoadPvOutputSettingsCommand();
+        sendLoadPvoutputStatusCommand();
+
+    });
+</script>
+
 </body>
 
 </html>

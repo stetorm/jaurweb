@@ -20,6 +20,9 @@ public class AResp_MFGdate extends AuroraResponse {
         date=aDate;
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(aDate);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
         int week=calendar.get(Calendar.WEEK_OF_YEAR);
         int year=calendar.get(Calendar.YEAR)-2000;
 
@@ -59,12 +62,20 @@ public class AResp_MFGdate extends AuroraResponse {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR,year);
         calendar.set(Calendar.WEEK_OF_YEAR,week);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
         return calendar.getTime();
     }
 
     @Override
     public String toString() {
-        return description.isEmpty()?super.toString(): description+": "+new SimpleDateFormat("MMMMM yyyy").format(get());
+        return description.isEmpty()? super.toString(): description+": "+getValue();
+    }
+
+    @Override
+    public String getValue() {
+        return new SimpleDateFormat("MMMMM yyyy").format(get());
     }
 
 

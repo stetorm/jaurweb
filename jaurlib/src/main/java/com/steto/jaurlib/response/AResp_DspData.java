@@ -8,6 +8,10 @@ package com.steto.jaurlib.response;
 public class AResp_DspData extends AuroraResponse{
 
 
+    @Override
+    public String getValue() {
+        return String.valueOf(getFloatParam());
+    }
 
     public AResp_DspData() {
         super();
