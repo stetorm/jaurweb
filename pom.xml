@@ -11,9 +11,9 @@
   <packaging>pom</packaging>
  
   <modules>
-    <module>jaurmon</module>
     <module>jaurlib</module>
-    <module>jaurinv</module>
     <module>jaurlibTest</module>
+    <module>jaurinv</module>
+    <module>jaurmon</module>
   </modules>
 </project>
